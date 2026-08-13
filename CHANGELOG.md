@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 2 — Foundation (2026-08-13)
+
+#### Added
+- ✅ Next.js 16.3.0 with App Router
+- ✅ TypeScript strict mode configuration
+- ✅ Tailwind CSS 4 with custom design tokens
+- ✅ React 19.2.8
+- ✅ Project folder structure (components, lib, types, hooks)
+- ✅ Navbar component with mobile menu
+- ✅ Footer component with links and contact info
+- ✅ Root layout with metadata and SEO
+- ✅ Homepage placeholder
+- ✅ Global styles with CSS variables for theming
+- ✅ Utility functions (formatPrice, slugify, generateWhatsAppUrl, etc.)
+- ✅ Constants file (property types, transaction types, Nigerian locations)
+- ✅ Supabase client dependencies
+- ✅ React Hook Form + Zod for form validation
+- ✅ lucide-react for icons
+- ✅ .env.example with all required variables
+- ✅ Comprehensive README.md
+- ✅ components.json for shadcn/ui
+
+#### Configured
+- Next.js for Cloudflare compatibility (unoptimized images, standalone output)
+- TypeScript with strict mode and path aliases
+- Tailwind CSS with custom color palette (green primary for trust)
+- Package.json with project metadata and dependencies
+
+#### Verified
+- ✅ Build successful (npm run build)
+- ✅ No TypeScript errors
+- ✅ No build warnings
+- ✅ Navbar and Footer render correctly
+- ✅ Responsive layout working
+
 ### Phase 1 — Architecture & Planning (2026-08-13)
 
 #### Added
