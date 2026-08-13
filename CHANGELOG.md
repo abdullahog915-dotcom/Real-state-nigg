@@ -8,6 +8,88 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 3 — Supabase Backend (2026-08-13)
+
+#### Added - Database Migrations
+- ✅ 17 SQL migration files for complete database schema
+- `001_initial_schema.sql` - PostgreSQL extensions (uuid-ossp, pgcrypto)
+- `002_profiles.sql` - User profiles with auto-create trigger
+- `003_locations.sql` - Nigerian cities and neighborhoods
+- `004_agents.sql` - Real estate agents
+- `005_amenities.sql` - Property amenities
+- `006_properties.sql` - Main property listings with full-text search
+- `007_property_images.sql` - Property gallery with ordering
+- `008_property_amenities.sql` - Property-amenity junction table
+- `009_favorites.sql` - User favorite properties
+- `010_inquiries.sql` - Customer inquiries and leads
+- `011_viewing_requests.sql` - Property viewing appointments
+- `012_contact_submissions.sql` - General contact forms
+- `013_blog_categories.sql` - Blog categories
+- `014_blog_posts.sql` - Blog posts with full-text search
+- `015_site_settings.sql` - Configurable site settings + social links
+- `016_rls_policies.sql` - Row Level Security for all tables
+- `017_storage_buckets.sql` - Storage buckets + policies
+
+#### Added - Row Level Security
+- ✅ RLS enabled on all 15 tables
+- ✅ Helper functions: `is_admin()`, `is_agent()`
+- ✅ Public policies for viewing published content
+- ✅ Customer policies for favorites and profile management
+- ✅ Agent policies for assigned properties and leads
+- ✅ Admin policies for full data access
+- ✅ Secure inquiry and viewing request submission
+
+#### Added - Storage
+- ✅ 4 storage buckets created
+  - `property-images` - Property photos and galleries
+  - `agent-images` - Agent profile photos
+  - `blog-images` - Blog featured images
+  - `site-assets` - Logos, favicons, general assets
+- ✅ Storage policies: Public read, Admin write/delete
+- ✅ File size and MIME type validation ready
+
+#### Added - Supabase Clients
+- ✅ `lib/supabase/client.ts` - Browser/client-side Supabase client
+- ✅ `lib/supabase/server.ts` - Server-side Supabase client with helpers
+- ✅ `lib/supabase/middleware.ts` - Authentication middleware helper
+- ✅ User helper functions (getUser, getUserProfile, isAdmin, isAgent)
+
+#### Added - TypeScript Types
+- ✅ `types/database.types.ts` - Complete database TypeScript types
+- ✅ All 15 table types with Row/Insert/Update interfaces
+- ✅ Enum types for property_type, transaction_type, status, role, etc.
+- ✅ JSON type for flexible data
+
+#### Added - Seed Data
+- ✅ `supabase/seed.sql` - Comprehensive demo data
+- ✅ 18 Nigerian locations (Lagos, Abuja, Port Harcourt)
+- ✅ 20 amenities (Pool, Gym, Security, Generator, BQ, etc.)
+- ✅ 6 demo agents with realistic profiles
+- ✅ 5 blog categories
+- ✅ Site settings (company info, contact details)
+- ✅ Social media links
+
+#### Added - Documentation
+- ✅ `docs/SUPABASE_SETUP.md` - Complete 16-step setup guide
+- ✅ `supabase/MIGRATION_ORDER.md` - Migration execution order
+- ✅ Database schema documentation
+- ✅ RLS policy explanations
+- ✅ Storage configuration guide
+- ✅ Troubleshooting section
+- ✅ Production checklist
+
+#### Added - Dependencies
+- ✅ `@supabase/ssr` for server-side rendering support
+
+#### Database Features
+- Auto-create profile on user signup (trigger function)
+- Auto-set published_at when status changes
+- Updated_at triggers on all relevant tables
+- Full-text search on properties and blog posts
+- Unique constraints on critical fields
+- Proper foreign key relationships
+- Cascading deletes where appropriate
+
 ### Phase 2 — Foundation (2026-08-13)
 
 #### Added
