@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Documentation (2026-08-13)
+
+#### Added
+- ✅ `PROJECT_RULES.md` - Permanent project rules and guidelines
+  - New session protocol
+  - Token/context limit protocol
+  - Technology stack rules
+  - Architecture rules (Next.js, Supabase, Database)
+  - Security rules (RLS, Authentication, Storage)
+  - Database migration rules
+  - Feature requirements (Properties, Agents, Leads, etc.)
+  - Responsive & mobile rules
+  - SEO requirements
+  - Reusability architecture
+  - Git rules
+  - Coding standards
+  - Development phases overview
+  - Project memory system
+  - Rules against duplication
+  - Cloudflare deployment rules
+  - Quality requirements
+  - Prohibited actions
+
 ### Phase 3 — Supabase Backend (2026-08-13)
 
 #### Added - Database Migrations
