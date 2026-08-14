@@ -870,6 +870,43 @@ export async function getLocationProperties(locationId: string, limit = 12) {
 }
 
 /**
+ * Get publicly visible properties by slug for the comparison page.
+ * Returns rows in the same order as the requested slugs; unknown or
+ * non-public slugs are omitted. Empty input returns an empty list
+ * without touching the database.
+ */
+export async function getPropertiesForComparison(slugs: string[]) {
+  if (slugs.length === 0) return [];
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(`
+      ${PROPERTY_DETAIL_COLUMNS},
+      property_amenities (
+        amenities (
+          id,
+          name
+        )
+      )
+    `)
+    .in('slug', slugs)
+    .in('status', ['published', 'featured']);
+
+  if (error) {
+    console.error('Error fetching comparison properties:', error.message);
+    return [];
+  }
+
+  // Preserve the requested slug order
+  const bySlug = new Map((data ?? []).map((row) => [row.slug, row]));
+  return slugs
+    .map((slug) => bySlug.get(slug))
+    .filter((row): row is NonNullable<typeof row> => row != null);
+}
+
+/**
  * Columns selected for blog post cards and detail pages.
  */
 const BLOG_POST_COLUMNS = `

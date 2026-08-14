@@ -442,7 +442,7 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - Inquiry forms
 - Viewing request system ✅ (2026-08-15)
 - Favorites system
-- Property comparison
+- Property comparison ✅ (2026-08-15)
 
 ### Phase 6 — Admin Dashboard
 - Admin authentication
@@ -608,5 +608,5 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 ---
 
 **Last Updated:** 2026-08-15  
-**Current Phase:** Phase 5 — Conversion Features (Viewing Request System complete)  
-**Status:** Continue Phase 5 — Favorites system / Property comparison
+**Current Phase:** Phase 5 — Conversion Features (Viewing Requests + Property Comparison complete)  
+**Status:** Continue Phase 5 — Favorites system (requires Supabase Auth rollout)

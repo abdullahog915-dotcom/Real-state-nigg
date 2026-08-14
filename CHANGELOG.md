@@ -8,6 +8,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 5 — Property Comparison (2026-08-15)
+
+#### Architecture
+- Client-side comparison: selections stored in localStorage as property slugs, mirrored into the `/compare?ids=slug1,slug2` URL so the page stays a Server Component with SEO metadata
+- No new database table, no migration, no RLS change — comparison is a transient browsing feature (schema only contains the `enable_comparison` site_settings flag)
+- State hook built on `useSyncExternalStore` (React 19 idiom) — syncs across components via a custom window event and across tabs via the native storage event
+- Maximum 3 properties; duplicates prevented; invalid/corrupt localStorage and URL ids ignored safely
+
+#### Added
+- ✅ `lib/compare.ts` — storage key, `MAX_COMPARE_PROPERTIES` (3), safe localStorage read/write, `parseCompareIds()`, `buildCompareUrl()`, `ComparePropertyView` view model
+- ✅ `hooks/useCompare.ts` — shared comparison selection state (toggle/remove/clear/isFull) via `useSyncExternalStore`
+- ✅ `components/compare/CompareButton.tsx` — add/remove toggle, `card` (overlay pill on PropertyCard) and `detail` (full-width sidebar button) variants, `aria-pressed`, disabled + tooltip when maximum reached
+- ✅ `components/compare/CompareBar.tsx` — floating selection bar ("N of 3 selected", Clear, Compare link built from current selection)
+- ✅ `components/compare/CompareTable.tsx` — responsive side-by-side table (horizontal scroll + sticky label column on mobile) comparing price, transaction/property type, location, bedrooms, bathrooms, toilets, area, year built, parking, furnishing, amenities, agent — all real schema fields; per-column remove button updates localStorage and the `?ids=` URL
+- ✅ `app/compare/page.tsx` — comparison page with SEO metadata and three states: no selection, stale/invalid selection, active comparison (with single-property encouragement note)
+- ✅ `app/compare/loading.tsx` — comparison loading skeleton
+- ✅ `lib/supabase/queries.ts` — Added `getPropertiesForComparison(slugs)` (anon client, reuses `PROPERTY_DETAIL_COLUMNS` + amenities join, published/featured visibility, preserves requested order, no DB call for empty input)
+
+#### Modified
+- `components/properties/PropertyCard.tsx` — Restructured to stretched-link pattern; compare toggle overlaid bottom-left of the card image (no button-inside-anchor)
+- `app/properties/page.tsx` — CompareBar mounted on the listing page
+- `app/properties/[slug]/page.tsx` — "Add to Compare / Remove from Compare" button at top of sidebar + CompareBar; inquiry, viewing-request, WhatsApp, gallery, and agent sections unchanged
+
+#### Database / RLS
+- No schema changes, no migration, no RLS changes, no service_role
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings — `hooks/` now linted too)
+- Production build: PASS (`/compare` route registered)
+- Routes 200: `/`, `/properties`, `/properties?page=2`, `/properties/nonexistent-property-slug` (not-found UI), `/compare`, `/compare?ids=fake-slug-one,fake-slug-two`, `/agents`, `/locations`, `/contact`, `/blog`
+- Browser-verified: localStorage selection survives reload (`2 of 3 selected` bar with correct `/compare?ids=` link); stale ids → "No Longer Available" state; Clear empties storage and hides the bar instantly; corrupt localStorage JSON ignored without errors; zero console errors/warnings
+- Server console clean — no Supabase permission/PostgREST errors
+
+#### Remaining Limitations
+- With zero properties in the database, selecting real properties and rendering a populated table could not be live-tested (no fake data per project rules); table rendering verified via build/typecheck + stale-state paths
+- `CompareButton` card variant not visually rendered yet (no property cards on screen) — same convention as earlier empty-DB phases
+
 ### Phase 5 — Viewing Request System (2026-08-15)
 
 #### Added

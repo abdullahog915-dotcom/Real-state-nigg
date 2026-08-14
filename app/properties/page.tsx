@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { PropertyRow } from '@/lib/supabase/queries';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { PropertyFilters } from '@/components/properties/PropertyFilters';
+import { CompareBar } from '@/components/compare/CompareBar';
 import { Pagination } from '@/components/shared/Pagination';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Separator } from '@/components/ui/separator';
@@ -191,6 +192,9 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
           )}
         </div>
       </section>
+
+      {/* Floating comparison bar (visible while properties are selected) */}
+      <CompareBar />
     </>
   );
 }

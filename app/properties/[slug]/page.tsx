@@ -41,6 +41,8 @@ import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { InquiryForm } from '@/components/forms/InquiryForm';
 import { ViewingRequestForm } from '@/components/forms/ViewingRequestForm';
+import { CompareButton } from '@/components/compare/CompareButton';
+import { CompareBar } from '@/components/compare/CompareBar';
 import { SectionHeading } from '@/components/shared/SectionHeading';
 import { getPropertyBySlug, getRelatedProperties } from '@/lib/supabase/queries';
 import { CONTACT_INFO } from '@/lib/constants';
@@ -333,6 +335,9 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
           {/* ===================== SIDEBAR ===================== */}
           <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            {/* Add/remove this property from comparison */}
+            <CompareButton variant="detail" slug={property.slug} title={property.title} />
+
             {/* Mobile WhatsApp CTA */}
             <Button asChild size="lg" className="w-full lg:hidden">
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
@@ -422,6 +427,9 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
           </section>
         )}
       </div>
+
+      {/* Floating comparison bar (visible while properties are selected) */}
+      <CompareBar />
     </>
   );
 }

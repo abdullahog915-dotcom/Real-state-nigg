@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 5 — CONVERSION FEATURES (VIEWING REQUESTS IN PROGRESS)**
+**PHASE 5 — CONVERSION FEATURES (VIEWING REQUESTS + PROPERTY COMPARISON COMPLETE)**
 
-Status: 🟡 IN PROGRESS — Viewing request system built and verified; favorites and comparison pending
+Status: 🟡 IN PROGRESS — Viewing requests and comparison built and verified; favorites pending (requires Supabase Auth)
 
 ---
 
 ## CURRENT TASK
 
-Phase 4 fully complete and committed. Phase 5 viewing request system (`/api/viewing-requests` + property detail form) built and verified.
+Phase 5 viewing request system and property comparison (`/compare`, client-side selection) built and verified. Awaiting commit approval for comparison work.
 
 ---
 
@@ -79,8 +79,8 @@ Phase 4 fully complete and committed. Phase 5 viewing request system (`/api/view
 
 ### Phase 5 — Conversion Features 🟡 IN PROGRESS (2026-08-15)
 - ✅ Viewing request system (public form on property detail + `/api/viewing-requests` route)
+- ✅ Property comparison (client-side selection + `/compare` page)
 - ⏳ Favorites system (requires Supabase Auth)
-- ⏳ Property comparison
 - ✅ WhatsApp integration (already shipped in Phase 4)
 - ✅ Inquiry forms (already shipped in Phase 4)
 
@@ -122,7 +122,6 @@ Phase 4 fully complete and committed. Phase 5 viewing request system (`/api/view
 
 ### Phase 5 — Conversion Features (REMAINING)
 - Favorites system
-- Property comparison
 
 ### Phase 5 — Conversion Features
 - WhatsApp integration
@@ -245,6 +244,19 @@ Phase 4 fully complete and committed. Phase 5 viewing request system (`/api/view
 - `components/forms/ViewingRequestForm.tsx` — Client viewing request form (React Hook Form + Zod, date/time inputs, submits to /api/viewing-requests)
 - `app/properties/[slug]/page.tsx` — Viewing request form integrated into property detail sidebar
 
+### Phase 5 — Property Comparison (2026-08-15)
+- `lib/compare.ts` — Comparison constants, safe localStorage helpers, URL id parsing, ComparePropertyView view model
+- `hooks/useCompare.ts` — Shared comparison selection state via useSyncExternalStore (toggle/remove/clear, max 3)
+- `components/compare/CompareButton.tsx` — Add/remove toggle (card overlay + detail sidebar variants)
+- `components/compare/CompareBar.tsx` — Floating selection bar with Clear + Compare link
+- `components/compare/CompareTable.tsx` — Responsive side-by-side comparison table with per-column remove
+- `app/compare/page.tsx` — Comparison page (SEO metadata, no-selection / stale-selection / active states)
+- `app/compare/loading.tsx` — Comparison loading skeleton
+- `lib/supabase/queries.ts` — Added `getPropertiesForComparison()` (anon client, published/featured only)
+- `components/properties/PropertyCard.tsx` — Restructured to stretched-link pattern with compare toggle overlay
+- `app/properties/page.tsx` — CompareBar mounted
+- `app/properties/[slug]/page.tsx` — Add/Remove from Compare button + CompareBar
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -332,12 +344,11 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 5 VIEWING REQUEST SYSTEM COMPLETE ✅ — verified, awaiting commit approval**
+**PHASE 5 PROPERTY COMPARISON COMPLETE ✅ — verified, awaiting commit approval**
 
 Continue **Phase 5 — Conversion Features**:
 
-1. Favorites system (requires Supabase Auth — decide auth rollout first)
-2. Property comparison feature
-3. Optional: seed real properties/agents/locations so property detail forms (inquiry + viewing) can be live-tested end-to-end
+1. Favorites system — requires Supabase Auth rollout first (`favorites` table + RLS already exist from Phase 3); decide auth strategy (email/password signup, session cookies via existing `lib/supabase/middleware.ts`)
+2. Optional: seed real properties/agents/locations so listing cards, compare buttons, inquiry + viewing forms can be live-tested end-to-end
 
 **Note:** No seed locations, agents, properties, or blog content exist yet. `contact_submissions` and `viewing_requests` tables are empty. Add seed data when ready.
