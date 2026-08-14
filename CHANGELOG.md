@@ -8,7 +8,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Documentation (2026-08-13)
+### Phase 4 — Homepage (2026-08-14)
+
+#### Added
+- ✅ `app/page.tsx` — Full homepage with hero section, property search, transaction categories, featured properties grid, property types, popular locations, featured agents, "why choose us" features, and CTA section
+- ✅ `app/loading.tsx` — Homepage loading skeleton with proper layout matching each section
+- ✅ `app/error.tsx` — Homepage error boundary with retry and reload options
+- ✅ `components/properties/PropertyCard.tsx` — Property card with image, badges, price, location, beds/baths/area
+- ✅ `components/agents/AgentCard.tsx` — Agent card with photo, name, specialization, location, bio, phone
+- ✅ `components/shared/SearchBar.tsx` — Client component with keyword, transaction type, property type, and location filters (hero and compact variants)
+- ✅ `components/shared/EmptyState.tsx` — Reusable empty state with icon, title, description, and optional action
+- ✅ `components/shared/SectionHeading.tsx` — Reusable section heading with subtitle, title, description, alignment
+- ✅ `lib/supabase/queries.ts` — Supabase query layer: getFeaturedProperties, getLatestProperties, getPropertyCountByTransactionType, getFeaturedLocations, getPropertyCountByCity, getActiveAgents, getTotalPropertyCount, getAllLocations
+- ✅ shadcn/ui primitives installed: button, card, badge, input, select, skeleton, separator
+- ✅ Homepage SEO metadata (title, description, canonical URL)
+
+#### Changed
+- `components/layout/Footer.tsx` — Replaced removed brand icons (Facebook, Instagram, Twitter, Linkedin) with available lucide-react generic icons (Globe, Camera, MessageCircle, Briefcase)
+- `lib/supabase/queries.ts` — Fixed TypeScript type casts for Supabase joined relations
+- `package.json` — Added lucide-react, class-variance-authority, radix-ui dependencies
+
+#### Empty States
+- Homepage gracefully handles no properties (no seed data exists)
+- Locations and agents sections show appropriate empty states
+
+### Integration Fixes (2026-08-13)
 
 #### Added
 - ✅ `PROJECT_RULES.md` - Permanent project rules and guidelines
@@ -199,11 +223,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Completed Phases
 - ✅ **Phase 1** — Architecture & Planning (2026-08-13)
+- ✅ **Phase 2** — Foundation (2026-08-13)
+- ✅ **Phase 3** — Supabase Backend (2026-08-13)
+- 🟡 **Phase 4** — Homepage Complete (2026-08-14)
 
 ### Pending Phases
-- ⏳ **Phase 2** — Foundation (Next.js, Tailwind, shadcn, Layout)
-- ⏳ **Phase 3** — Supabase Backend (Database, RLS, Auth, Storage)
-- ⏳ **Phase 4** — Public Website (Homepage, Properties, Agents, Blog)
+- ⏳ **Phase 4** — Remaining Pages (Property Listing, Detail, Agents, Locations, Contact, Blog)
 - ⏳ **Phase 5** — Conversion Features (WhatsApp, Inquiries, Viewings, Favorites)
 - ⏳ **Phase 6** — Admin Dashboard (Authentication, CRUD, Management)
 - ⏳ **Phase 7** — SEO & Performance (Metadata, Schema, Optimization)
@@ -247,4 +272,4 @@ After each significant change:
 ---
 
 **Changelog Started:** 2026-08-13  
-**Project Status:** Phase 1 Complete — Ready for Phase 2
+**Project Status:** Phase 4 — Homepage Complete, Remaining Pages Pending

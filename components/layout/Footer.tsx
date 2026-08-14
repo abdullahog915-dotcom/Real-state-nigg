@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Globe, Camera, MessageCircle, Briefcase, Mail, Phone, MapPin } from 'lucide-react';
 import { CONTACT_INFO } from '@/lib/constants';
 
 export function Footer() {
@@ -31,10 +31,10 @@ export function Footer() {
   };
 
   const socialLinks = [
-    { name: 'Facebook', icon: Facebook, href: '#' },
-    { name: 'Instagram', icon: Instagram, href: '#' },
-    { name: 'Twitter', icon: Twitter, href: '#' },
-    { name: 'LinkedIn', icon: Linkedin, href: '#' },
+    { name: 'Facebook', icon: Globe, href: '#' },
+    { name: 'Instagram', icon: Camera, href: '#' },
+    { name: 'Twitter', icon: MessageCircle, href: '#' },
+    { name: 'LinkedIn', icon: Briefcase, href: '#' },
   ];
 
   return (
