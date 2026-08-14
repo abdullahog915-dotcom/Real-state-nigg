@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE)**
+**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + PROPERTY LISTING)**
 
-Status: 🟡 IN PROGRESS — Homepage complete, remaining pages pending
+Status: 🟡 IN PROGRESS — Homepage and Property Listing complete, remaining pages pending
 
 ---
 
 ## CURRENT TASK
 
-Phase 4 homepage complete. Remaining pages (property listing, property detail, agents, locations, contact, blog) pending.
+Phase 4 homepage and property listing complete. Remaining pages (property detail, agents, locations, contact, blog) pending.
 
 ---
 
@@ -99,14 +99,16 @@ None — Phase 3 complete.
 - ✅ Property search bar (client component with filters)
 - ✅ PropertyCard component
 - ✅ AgentCard component
-- ✅ Shared components (SearchBar, EmptyState, SectionHeading)
+- ✅ Shared components (SearchBar, EmptyState, SectionHeading, Pagination)
 - ✅ Supabase query layer (lib/supabase/queries.ts)
-- ✅ Loading skeleton page
+- ✅ Loading skeleton pages (homepage + properties)
 - ✅ Error boundary page
-- ✅ SEO metadata for homepage
+- ✅ SEO metadata for homepage and property listing
 - ✅ shadcn/ui primitives installed (button, card, badge, input, select, skeleton, separator)
 - ✅ Footer brand icons updated (lucide-react removed brand icons)
-- ⏳ Property listing page with advanced filters
+- ✅ Property listing page (`/properties`) with filters, sorting, pagination, empty state
+- ✅ PropertyFilters client component (keyword, transaction type, property type, location, bedrooms, price range, sort)
+- ✅ getProperties() query with full filter/sort/pagination support
 - ⏳ Property detail page with gallery
 - ⏳ Agent listing and detail pages
 - ⏳ Location pages
@@ -179,6 +181,13 @@ None — Phase 3 complete.
 - `components/layout/Footer.tsx` — Updated brand icons (lucide-react removed brand icons)
 - `components/ui/*.tsx` — shadcn/ui primitives (button, card, badge, input, select, skeleton, separator)
 - `package.json` — Updated dependencies (lucide-react, class-variance-authority, radix-ui)
+
+### Phase 4 — Property Listing (2026-08-14)
+- `app/properties/page.tsx` — Full property listing page with SEO metadata, URL-driven filters, property grid, pagination, empty state
+- `app/properties/loading.tsx` — Property listing loading skeleton with header + card grid placeholders
+- `components/properties/PropertyFilters.tsx` — Client filter component (keyword, transaction type, property type, location, bedrooms, price range, sort) with collapsible advanced section
+- `components/shared/Pagination.tsx` — Reusable URL-based pagination component with page numbers and prev/next navigation
+- `lib/supabase/queries.ts` — Added `getProperties()` query with PropertyListFilters interface (filter, sort, pagination support)
 
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
@@ -267,16 +276,15 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 4 HOMEPAGE COMPLETE ✅**
+**PHASE 4 PROPERTY LISTING COMPLETE ✅**
 
 Continue **Phase 4 — Public Website** with remaining pages:
 
-1. Build property listing page (`/properties`) with advanced filters
-2. Create property detail page (`/properties/[slug]`) with gallery
-3. Build agent listing (`/agents`) and detail (`/agents/[slug]`) pages
-4. Create location pages (`/locations`, `/locations/[slug]`)
-5. Implement contact page (`/contact`)
-6. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
-7. Add SEO metadata for all new pages
+1. Build property detail page (`/properties/[slug]`) with gallery
+2. Build agent listing (`/agents`) and detail (`/agents/[slug]`) pages
+3. Create location pages (`/locations`, `/locations/[slug]`)
+4. Implement contact page (`/contact`)
+5. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
+6. Add SEO metadata for all new pages
 
-**Note:** No seed properties exist yet. Pages should show EmptyState gracefully. Add seed properties when ready.
+**Note:** No seed properties exist yet. Property listing shows EmptyState gracefully. Add seed properties when ready.

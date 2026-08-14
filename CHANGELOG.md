@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 4 — Property Listing (2026-08-14)
+
+#### Added
+- ✅ `app/properties/page.tsx` — Property listing page with SEO metadata, URL-driven filters (transaction type, property type, location, keyword, bedrooms, price range), server-side sorting, pagination, active filter chips, and empty state handling
+- ✅ `app/properties/loading.tsx` — Property listing loading skeleton with header + 8-card grid placeholders
+- ✅ `components/properties/PropertyFilters.tsx` — Client filter component with keyword search, transaction type, property type, location dropdowns, collapsible advanced section (bedrooms, min/max price, sort), and clear all filters
+- ✅ `components/shared/Pagination.tsx` — Reusable URL-based pagination component with page numbers, ellipsis, and prev/next navigation
+- ✅ `lib/supabase/queries.ts` — Added `getProperties()` query with `PropertyListFilters` interface supporting full filter/sort/pagination pipeline
+
+#### Compatibility
+- Homepage SearchBar (`type`, `property_type`, `location`, `q` params) fully compatible with listing page URL parameters
+- Homepage category links (`/properties?type=sale`, `/properties?property_type=apartment`) route correctly to listing page
+
 ### Phase 4 — Homepage (2026-08-14)
 
 #### Added
@@ -225,10 +238,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ✅ **Phase 1** — Architecture & Planning (2026-08-13)
 - ✅ **Phase 2** — Foundation (2026-08-13)
 - ✅ **Phase 3** — Supabase Backend (2026-08-13)
-- 🟡 **Phase 4** — Homepage Complete (2026-08-14)
+- ✅ **Phase 4** — Homepage + Property Listing Complete (2026-08-14)
 
 ### Pending Phases
-- ⏳ **Phase 4** — Remaining Pages (Property Listing, Detail, Agents, Locations, Contact, Blog)
+- ⏳ **Phase 4** — Remaining Pages (Property Detail, Agents, Locations, Contact, Blog)
 - ⏳ **Phase 5** — Conversion Features (WhatsApp, Inquiries, Viewings, Favorites)
 - ⏳ **Phase 6** — Admin Dashboard (Authentication, CRUD, Management)
 - ⏳ **Phase 7** — SEO & Performance (Metadata, Schema, Optimization)
@@ -272,4 +285,4 @@ After each significant change:
 ---
 
 **Changelog Started:** 2026-08-13  
-**Project Status:** Phase 4 — Homepage Complete, Remaining Pages Pending
+**Project Status:** Phase 4 — Homepage + Property Listing Complete, Remaining Pages Pending
