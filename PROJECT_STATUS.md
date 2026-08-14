@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + LISTING + PROPERTY DETAIL + AGENTS + LOCATIONS)**
+**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + LISTING + PROPERTY DETAIL + AGENTS + LOCATIONS + CONTACT)**
 
-Status: 🟡 IN PROGRESS — Homepage, Property Listing, Property Detail, Agents, and Locations complete, remaining pages pending
+Status: 🟡 IN PROGRESS — Homepage, Property Listing, Property Detail, Agents, Locations, and Contact complete, blog pending
 
 ---
 
 ## CURRENT TASK
 
-Phase 4 homepage, property listing, property detail, agents, and locations complete. Remaining pages (contact, blog) pending.
+Phase 4 homepage, property listing, property detail, agents, locations, and contact complete. Remaining pages (blog) pending.
 
 ---
 
@@ -219,6 +219,11 @@ None — Phase 3 complete.
 - `components/locations/LocationCard.tsx` — Location card with featured badge, city/state, description snippet, and live property count
 - `lib/supabase/queries.ts` — Added `getLocations()`, `getLocationBySlug()`, and `getLocationProperties()` queries
 
+### Phase 4 — Contact Page (2026-08-15)
+- `app/contact/page.tsx` — Contact page (SEO metadata, phone/WhatsApp/email channels from CONTACT_INFO, office hours, contact form)
+- `app/api/contact/route.ts` — Public contact submission API route with server-side Zod validation (inserts into contact_submissions via anon server client)
+- `components/forms/ContactForm.tsx` — Client contact form (React Hook Form + Zod, submits to /api/contact)
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -306,12 +311,11 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 4 LOCATIONS COMPLETE ✅**
+**PHASE 4 CONTACT PAGE COMPLETE ✅**
 
 Continue **Phase 4 — Public Website** with remaining pages:
 
-1. Implement contact page (`/contact`)
-2. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
-3. Add SEO metadata for all new pages
+1. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
+2. Add SEO metadata for all new pages
 
-**Note:** No seed locations, agents, or properties exist yet. Locations listing shows a proper empty state and unknown location slugs render the not-found page. Add seed locations when ready.
+**Note:** No seed locations, agents, or properties exist yet. The `contact_submissions` verification row was deleted after testing (table empty). Add seed data when ready.

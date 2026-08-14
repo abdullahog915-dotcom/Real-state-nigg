@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 4 — Contact Page (2026-08-15)
+
+#### Added
+- ✅ `app/contact/page.tsx` — Contact page with SEO metadata, direct contact channels (phone, WhatsApp, email from `CONTACT_INFO`), office hours card, and the contact form. Static (no database reads), prerendered at build time
+- ✅ `app/api/contact/route.ts` — Public `POST /api/contact` route with server-side Zod validation, inserts into `contact_submissions` via the anon server client (RLS allows public inserts; reads admin-only). `status` defaults to `'new'` at the database level
+- ✅ `components/forms/ContactForm.tsx` — Client contact form (React Hook Form + Zod) with inline validation, loading, success, and error states — mirrors the established `InquiryForm` idiom
+
+#### SEO
+- ✅ Static metadata with title, description, and canonical URL
+
+#### Security / RLS
+- Server re-validates every submission; client schema only drives inline UX
+- Relies on existing RLS (`"Anyone can submit contact forms"` public INSERT, `"Admins can manage contact submissions"` for reads) — no policy, schema, or migration changes
+- No service_role used; anon server client only
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings)
+- Production build: PASS (`/contact` prerendered static, `/api/contact` registered)
+- `/contact` renders header, form, and office hours (200); `/`, `/properties`, `/agents`, `/locations` regression checks pass (all 200)
+- API returns 400 on invalid input (Zod validation working)
+- Live valid submission returned `{"success":true}` — verified anon INSERT privilege and RLS policy end-to-end (the single labeled verification row was deleted afterwards; `contact_submissions` is empty again)
+
 ### Phase 4 — Locations (2026-08-15)
 
 #### Added
