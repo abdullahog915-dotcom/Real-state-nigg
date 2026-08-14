@@ -441,8 +441,9 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - WhatsApp integration
 - Inquiry forms
 - Viewing request system ✅ (2026-08-15)
-- Favorites system
+- Favorites system (auth foundation ready)
 - Property comparison ✅ (2026-08-15)
+- Auth foundation ✅ (2026-08-15 — login/signup/callback/sign-out/navbar)
 
 ### Phase 6 — Admin Dashboard
 - Admin authentication
@@ -608,5 +609,5 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 ---
 
 **Last Updated:** 2026-08-15  
-**Current Phase:** Phase 5 — Conversion Features (Viewing Requests + Property Comparison complete)  
-**Status:** Continue Phase 5 — Favorites system (requires Supabase Auth rollout)
+**Current Phase:** Phase 5 — Conversion Features (Viewing Requests + Property Comparison + Auth Foundation complete)
+**Status:** Continue Phase 5 — Favorites system implementation (auth foundation in place: `/login`, `/signup`, `/auth/callback`, sign-out, auth-aware navbar)

@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 5 — CONVERSION FEATURES (VIEWING REQUESTS + PROPERTY COMPARISON COMPLETE)**
+**PHASE 5 — CONVERSION FEATURES (VIEWING REQUESTS + PROPERTY COMPARISON + AUTH FOUNDATION COMPLETE)**
 
-Status: 🟡 IN PROGRESS — Viewing requests and comparison built and verified; favorites pending (requires Supabase Auth)
+Status: 🟡 IN PROGRESS — Viewing requests, comparison, and auth foundation built and verified; favorites implementation pending (auth prerequisites now in place)
 
 ---
 
 ## CURRENT TASK
 
-Phase 5 viewing request system and property comparison (`/compare`, client-side selection) built and verified. Awaiting commit approval for comparison work.
+Phase 5 Auth Foundation (login, signup, email-confirmation callback, sign-out, auth-aware navbar) built and verified. Awaiting commit approval; Favorites implementation comes next (second commit).
 
 ---
 
@@ -80,7 +80,8 @@ Phase 5 viewing request system and property comparison (`/compare`, client-side 
 ### Phase 5 — Conversion Features 🟡 IN PROGRESS (2026-08-15)
 - ✅ Viewing request system (public form on property detail + `/api/viewing-requests` route)
 - ✅ Property comparison (client-side selection + `/compare` page)
-- ⏳ Favorites system (requires Supabase Auth)
+- ✅ Auth foundation (`/login`, `/signup`, `/auth/callback`, sign-out, auth-aware navbar — no migrations, existing `@supabase/ssr` plumbing)
+- ⏳ Favorites system (auth prerequisites now complete; implementation pending)
 - ✅ WhatsApp integration (already shipped in Phase 4)
 - ✅ Inquiry forms (already shipped in Phase 4)
 
@@ -257,6 +258,18 @@ Phase 5 viewing request system and property comparison (`/compare`, client-side 
 - `app/properties/page.tsx` — CompareBar mounted
 - `app/properties/[slug]/page.tsx` — Add/Remove from Compare button + CompareBar
 
+### Phase 5 — Auth Foundation (2026-08-15)
+- `lib/auth.ts` — `getSafeRedirectPath()` open-redirect guard for `?next=` targets
+- `app/login/page.tsx` — Sign-in page (metadata, callback-error banner, signed-in redirect, `?next=`)
+- `components/auth/LoginForm.tsx` — RHF + Zod login form with friendly auth-error mapping
+- `app/signup/page.tsx` — Create-account page (`?next=` support)
+- `components/auth/SignupForm.tsx` — RHF + Zod signup form (password confirm, "Check Your Email" state, `emailRedirectTo` = `/auth/callback`)
+- `app/auth/callback/route.ts` — Email-confirmation code exchange (SSR client, no service_role)
+- `app/auth/actions.ts` — `signOut` server action
+- `components/auth/SignOutButton.tsx` — Reusable sign-out button
+- `components/layout/NavbarClient.tsx` — Navbar interactivity + auth areas (Login/Sign Up vs Favorites/email/Sign Out)
+- `components/layout/Navbar.tsx` — Converted to server wrapper using existing `getUser()`
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -344,11 +357,12 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 5 PROPERTY COMPARISON COMPLETE ✅ — verified, awaiting commit approval**
+**PHASE 5 AUTH FOUNDATION COMPLETE ✅ — verified, awaiting commit approval**
 
 Continue **Phase 5 — Conversion Features**:
 
-1. Favorites system — requires Supabase Auth rollout first (`favorites` table + RLS already exist from Phase 3); decide auth strategy (email/password signup, session cookies via existing `lib/supabase/middleware.ts`)
-2. Optional: seed real properties/agents/locations so listing cards, compare buttons, inquiry + viewing forms can be live-tested end-to-end
+1. Favorites system (second commit `build phase 5 favorites`) — auth foundation is now in place: `POST/DELETE /api/favorites` (session-derived `user_id`, published-property check, `23505` idempotency), `/favorites` page (auth-gated, redirect to `/login?next=/favorites`), FavoriteButton on PropertyCard + property detail, favorites state plumbing from server pages
+2. Reminder: Supabase Email provider confirmed live; email confirmation architecture is ON (`/auth/callback` built). Dashboard setting can be flipped for local testing without code changes.
+3. Optional: seed real properties/agents/locations so listing cards, compare buttons, favorite buttons, inquiry + viewing forms can be live-tested end-to-end
 
 **Note:** No seed locations, agents, properties, or blog content exist yet. `contact_submissions` and `viewing_requests` tables are empty. Add seed data when ready.

@@ -8,6 +8,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 5 — Auth Foundation (2026-08-15)
+
+#### Architecture
+- Supabase Email/Password auth on the existing `@supabase/ssr` plumbing — no new auth libraries, no migrations, no schema/RLS changes, no service_role
+- Email confirmation architecture: ON — `app/auth/callback` exchanges the emailed one-time `code` for a session (`exchangeCodeForSession`); signup forms never report a logged-in state without a real session
+- Signed-in user detected server-side via the existing `getUser()` helper and passed to the navbar as a prop — no hydration mismatch, no loading flash
+- Open-redirect defense: shared `getSafeRedirectPath()` accepts only internal relative paths (rejects `//host`, `/\host`, absolute URLs, control chars) and is applied on server pages, client forms, and the callback route
+
+#### Added
+- ✅ `app/login/page.tsx` — Sign-in page (SEO metadata, callback-error banner from an allowlist of keys, signed-in users redirected away, `?next=` support)
+- ✅ `components/auth/LoginForm.tsx` — RHF + Zod login form (email validation, password required, inline errors, pending state, friendly mapping of `invalid_credentials` / `email not confirmed` errors, redirect to validated `next`)
+- ✅ `app/signup/page.tsx` — Create-account page (`?next=` support, signed-in users redirected away)
+- ✅ `components/auth/SignupForm.tsx` — RHF + Zod signup form (email, 8–72 char password, confirmation match, duplicate-account detection incl. the empty-identities edge case, `emailRedirectTo` = `/auth/callback`, honest "Check Your Email" state when confirmation is required, immediate redirect when confirmation is disabled)
+- ✅ `app/auth/callback/route.ts` — GET handler: exchanges `code` for a session via the SSR client; missing/invalid code → `/login?error=callback` (generic key, no Supabase error text leaked); validated `next` preserved
+- ✅ `app/auth/actions.ts` — `signOut` server action (swallows remote errors, always redirects to `/`)
+- ✅ `components/auth/SignOutButton.tsx` — reusable client sign-out button (`useTransition` pending state)
+- ✅ `components/layout/NavbarClient.tsx` — existing navbar markup moved to a client component with auth areas: signed-out → Login + Sign Up; signed-in → Favorites link, truncated email indicator, Sign Out (desktop + mobile menu)
+- ✅ `lib/auth.ts` — `getSafeRedirectPath()` open-redirect guard
+
+#### Modified
+- `components/layout/Navbar.tsx` — converted to an async Server Component wrapper: `getUser()` → `<NavbarClient userEmail=... />`
+
+#### Security decisions
+- No `user_id` ever accepted from the client; session-derived only
+- `?next=` validated in three layers (login/signup server pages, client forms re-validate, callback route)
+- Auth errors mapped to generic user-facing messages; raw Supabase error text never rendered or reflected into URLs
+- No routes globally protected yet — `/favorites` gating ships with the Favorites feature
+- Existing session-refresh middleware untouched; all public routes remain public
+
+#### Verification
+- TypeScript: PASS (0 errors) · ESLint: PASS (0 errors) · Production build: PASS (`/login`, `/signup`, `/auth/callback` registered)
+- Routes: `/login` 200, `/signup` 200, `/auth/callback` 307 → `/login?error=callback`; regressions `/`, `/properties`, `/agents`, `/locations`, `/blog`, `/contact`, `/compare` all 200
+- Callback: missing code, invalid code, and invalid code + `next=//example.com` all redirect to `/login?error=callback` with the malicious `next` dropped; invalid code + valid `next=/favorites` preserves `next`
+- Open redirect: `/login?next=%2F%2Fexample.com` renders the signup cross-link as plain `/signup`; `/login?next=%2Ffavorites` propagates to `/signup?next=%2Ffavorites`
+- Supabase Auth Email provider confirmed live: password grant with nonexistent credentials returns HTTP 400 `invalid_credentials` / "Invalid login credentials" — exactly the message LoginForm maps (no account created)
+- Server-rendered HTML verified complete for login (form, banner, links) and signup (email + password + confirm fields)
+
+#### Testing limitations
+- Client-side form validation and auth-error UI could not be click-tested in the automated browser: streamed Suspense page content never hydrates in that environment (affects previously shipped pages too, e.g. `/compare`); layout/navbar client hydration confirmed working. Zod schemas and error mappings verified by code review + live API error-shape check.
+- Signup was intentionally never submitted with valid data (no fake accounts per project rules), so confirmation-email delivery was not exercised.
+- Favorites still pending — second commit.
+
 ### Phase 5 — Property Comparison (2026-08-15)
 
 #### Architecture
