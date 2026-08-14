@@ -8,6 +8,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 4 — Blog (2026-08-15)
+
+#### Added
+- ✅ `app/blog/page.tsx` — Blog listing page with SEO metadata, article count, URL-driven category filter chips (`?category=<slug>`), count-first pagination (9 per page) preserving query params, and empty state handling
+- ✅ `app/blog/loading.tsx` — Blog listing loading skeleton with category chip placeholders
+- ✅ `app/blog/[slug]/page.tsx` — Blog detail page with breadcrumbs, category badge linking back to filtered listing, published date, featured image, excerpt lead, full content (whitespace-preserving), back-to-blog button, related articles (same category preferred), and dynamic `generateMetadata()` using `meta_title`/`meta_description`/`featured_image`
+- ✅ `app/blog/[slug]/loading.tsx` — Blog detail loading skeleton
+- ✅ `app/blog/[slug]/not-found.tsx` — Professional "Article Not Found" page
+- ✅ `components/blog/BlogCard.tsx` — Blog card with featured image (placeholder fallback), category badge, published date, title, excerpt, read-more link
+- ✅ `lib/supabase/queries.ts` — Added `getBlogPosts()` (published-only, category slug → id resolution, count-first pagination), `getBlogCategories()`, `getBlogPostBySlug()` (`maybeSingle()`, PGRST116 tolerated), and `getRelatedBlogPosts()` (same category → recent posts fallback)
+- ✅ `lib/utils.ts` — Added `formatDate()` display helper
+
+#### SEO
+- ✅ Static metadata for `/blog`; dynamic `generateMetadata()` for `/blog/[slug]` with meta_title/meta_description fallbacks, canonical URL, and Open Graph featured image
+
+#### Empty / Not-Found Handling
+- No blog posts → "No Articles Published Yet" empty state with browse CTA
+- Unknown category filter → empty result with category-specific empty state
+- Unknown post slug → custom not-found page (no database errors leaked)
+- Drafts/archived posts never exposed (RLS + explicit `status = 'published'` filter)
+
+#### Security / RLS
+- Relies on existing RLS (`"Anyone can view published blog posts"`, `"Anyone can view blog categories"`) plus explicit status filtering
+- `author_id` references `auth.users` and is intentionally not exposed/joined (no public author name available in the schema)
+- No service_role used; anon server client only; no schema, migration, or policy changes
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings)
+- Production build: PASS (`/blog` and `/blog/[slug]` routes registered)
+- `/blog`, `/blog?page=2`, `/blog?category=nonexistent-cat`, `/blog/nonexistent-post-slug`, `/`, `/properties`, `/agents`, `/locations`, `/contact` all return 200 with correct content
+- Database verified empty of posts and categories (seed never run) — empty states tested per project rules; no Supabase errors in server console
+
+#### Notes
+- Blog content is rendered as whitespace-preserving plain text (`whitespace-pre-line`) — no markdown dependency added
+- Phase 4 (Public Website) is now fully complete: Homepage, Property Listing, Property Detail, Agents, Locations, Contact, Blog
+
 ### Phase 4 — Contact Page (2026-08-15)
 
 #### Added

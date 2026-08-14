@@ -66,6 +66,19 @@ export function formatArea(sqm: number): string {
 }
 
 /**
+ * Format an ISO date string for display (e.g. "15 Aug 2026")
+ */
+export function formatDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/**
  * Get property type label
  */
 export function getPropertyTypeLabel(type: string): string {

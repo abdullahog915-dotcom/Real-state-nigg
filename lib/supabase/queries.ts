@@ -870,6 +870,209 @@ export async function getLocationProperties(locationId: string, limit = 12) {
 }
 
 /**
+ * Columns selected for blog post cards and detail pages.
+ */
+const BLOG_POST_COLUMNS = `
+  id,
+  title,
+  slug,
+  content,
+  excerpt,
+  featured_image,
+  status,
+  meta_title,
+  meta_description,
+  published_at,
+  blog_categories (
+    id,
+    name,
+    slug
+  )
+`;
+
+export interface BlogListFilters {
+  category?: string;
+  page?: number;
+  per_page?: number;
+}
+
+/**
+ * Get published blog posts with count-first pagination.
+ * RLS only exposes posts with status = 'published'.
+ * Category filter resolves the category slug to its id first.
+ */
+export async function getBlogPosts(filters: BlogListFilters = {}) {
+  const { category, page = 1, per_page = 9 } = filters;
+  const supabase = await createClient();
+
+  // Resolve category slug to id (unknown category → empty result)
+  let categoryId: string | undefined;
+  if (category) {
+    const { data: categoryRow } = await supabase
+      .from('blog_categories')
+      .select('id')
+      .eq('slug', category)
+      .maybeSingle();
+
+    if (!categoryRow) {
+      return { data: [], count: 0, totalPages: 0, page, perPage: per_page };
+    }
+    categoryId = categoryRow.id;
+  }
+
+  // Build the count query (HEAD request).
+  // Uses `any` for the PostgREST builder type because Supabase's
+  // generic chain types are not expressible as a standalone variable.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let countQuery: any = supabase
+    .from('blog_posts')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'published');
+  if (categoryId) {
+    countQuery = countQuery.eq('category_id', categoryId);
+  }
+
+  // Step 1: Get total count (HEAD request — no body transferred)
+  const { count, error: countError } = await countQuery;
+
+  if (countError) {
+    console.error('Error counting blog posts:', countError.message);
+    return { data: [], count: 0, totalPages: 0, page, perPage: per_page };
+  }
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / per_page);
+
+  // Step 2: Check bounds — return empty if out of range (prevents PostgREST 416)
+  if (totalCount === 0 || page > totalPages || page < 1) {
+    return { data: [], count: totalCount, totalPages, page, perPage: per_page };
+  }
+
+  // Step 3: Fetch data with range (page guaranteed valid)
+  const from = (page - 1) * per_page;
+  const to = from + per_page - 1;
+
+  let dataQuery = supabase
+    .from('blog_posts')
+    .select(BLOG_POST_COLUMNS)
+    .eq('status', 'published')
+    .order('published_at', { ascending: false });
+  if (categoryId) {
+    dataQuery = dataQuery.eq('category_id', categoryId);
+  }
+
+  const { data, error } = await dataQuery.range(from, to);
+
+  if (error) {
+    console.error('Error fetching blog posts:', error.message);
+    return { data: [], count: totalCount, totalPages, page, perPage: per_page };
+  }
+
+  return { data: data ?? [], count: totalCount, totalPages, page, perPage: per_page };
+}
+
+/**
+ * Get all blog categories ordered for display.
+ */
+export async function getBlogCategories() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('blog_categories')
+    .select('id, name, slug, description')
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching blog categories:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Get a single published blog post by slug.
+ * Returns null when the slug does not match a published post.
+ */
+export async function getBlogPostBySlug(slug: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select(BLOG_POST_COLUMNS)
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .maybeSingle();
+
+  if (error) {
+    // PGRST116 (row not found) is expected for unknown slugs
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching blog post by slug:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Get recent published blog posts, preferring the same category.
+ */
+export async function getRelatedBlogPosts(
+  excludeId: string,
+  categoryId: string | null | undefined,
+  limit = 3
+) {
+  const supabase = await createClient();
+  const results: NonNullable<Awaited<ReturnType<typeof getBlogPosts>>['data']> = [];
+  const seenIds = new Set<string>();
+
+  // Prefer posts in the same category
+  if (categoryId) {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(BLOG_POST_COLUMNS)
+      .eq('status', 'published')
+      .eq('category_id', categoryId)
+      .neq('id', excludeId)
+      .order('published_at', { ascending: false })
+      .limit(limit);
+
+    if (!error && data) {
+      for (const row of data) {
+        results.push(row);
+        seenIds.add(row.id as string);
+      }
+    }
+  }
+
+  // Fill remaining slots with recent posts from any category
+  if (results.length < limit) {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select(BLOG_POST_COLUMNS)
+      .eq('status', 'published')
+      .neq('id', excludeId)
+      .order('published_at', { ascending: false })
+      .limit(limit);
+
+    if (!error && data) {
+      for (const row of data) {
+        if (!seenIds.has(row.id as string)) {
+          results.push(row);
+          seenIds.add(row.id as string);
+        }
+      }
+    } else if (error) {
+      console.error('Error fetching related blog posts:', error.message);
+    }
+  }
+
+  return results.slice(0, limit);
+}
+
+/**
  * Get a single active agent by slug.
  * Returns null when the slug does not match an active agent.
  */
