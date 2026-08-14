@@ -568,3 +568,167 @@ export async function getProperties(filters: PropertyListFilters = {}) {
 
   return { data: data ?? [], count: totalCount, totalPages, page, perPage: per_page };
 }
+
+/**
+ * Columns selected for property detail queries.
+ * Shared between detail and related property queries.
+ */
+const PROPERTY_DETAIL_COLUMNS = `
+  id,
+  title,
+  slug,
+  description,
+  property_id,
+  property_type,
+  transaction_type,
+  status,
+  price,
+  currency,
+  bedrooms,
+  bathrooms,
+  toilets,
+  area,
+  lot_size,
+  year_built,
+  parking_spaces,
+  floors,
+  is_furnished,
+  featured_image,
+  gallery_images,
+  is_featured,
+  address,
+  latitude,
+  longitude,
+  meta_title,
+  meta_description,
+  og_image,
+  published_at,
+  created_at,
+  location_id,
+  agent_id,
+  locations (
+    id,
+    name,
+    slug,
+    city,
+    state,
+    country
+  ),
+  agents (
+    id,
+    name,
+    slug,
+    email,
+    phone,
+    whatsapp,
+    bio,
+    photo_url,
+    specialization,
+    locations
+  )
+`;
+
+/**
+ * Get a single publicly visible property by slug with all detail relations.
+ * Returns null when the slug does not match a published/featured property.
+ */
+export async function getPropertyBySlug(slug: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(`
+      ${PROPERTY_DETAIL_COLUMNS},
+      property_images (
+        id,
+        url,
+        alt_text,
+        display_order,
+        is_featured
+      ),
+      property_amenities (
+        amenities (
+          id,
+          name,
+          slug,
+          icon,
+          category
+        )
+      )
+    `)
+    .eq('slug', slug)
+    .in('status', ['published', 'featured'])
+    .maybeSingle();
+
+  if (error) {
+    // PGRST116 (row not found) is expected for unknown slugs — do not log loudly
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching property by slug:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Get properties related to the current one.
+ * Prefers same location, then fills with same transaction type.
+ */
+export async function getRelatedProperties(
+  excludeId: string,
+  opts: { location_id?: string | null; transaction_type?: string },
+  limit = 3
+) {
+  const supabase = await createClient();
+  const results: Record<string, unknown>[] = [];
+  const seenIds = new Set<string>([excludeId]);
+
+  // Prefer properties in the same location
+  if (opts.location_id) {
+    const { data, error } = await supabase
+      .from('properties')
+      .select(PROPERTY_DETAIL_COLUMNS)
+      .in('status', ['published', 'featured'])
+      .eq('location_id', opts.location_id)
+      .neq('id', excludeId)
+      .order('published_at', { ascending: false })
+      .limit(limit);
+
+    if (!error && data) {
+      for (const row of data) {
+        results.push(row);
+        seenIds.add(row.id as string);
+      }
+    } else if (error) {
+      console.error('Error fetching related properties by location:', error.message);
+    }
+  }
+
+  // Fill remaining slots with same transaction type
+  if (results.length < limit && opts.transaction_type) {
+    const remaining = limit - results.length;
+    const { data, error } = await supabase
+      .from('properties')
+      .select(PROPERTY_DETAIL_COLUMNS)
+      .in('status', ['published', 'featured'])
+      .eq('transaction_type', opts.transaction_type)
+      .neq('id', excludeId)
+      .order('published_at', { ascending: false })
+      .limit(remaining + seenIds.size);
+
+    if (!error && data) {
+      for (const row of data) {
+        if (results.length >= limit) break;
+        if (!seenIds.has(row.id as string)) {
+          results.push(row);
+          seenIds.add(row.id as string);
+        }
+      }
+    } else if (error) {
+      console.error('Error fetching related properties by transaction type:', error.message);
+    }
+  }
+
+  return results.slice(0, limit);
+}

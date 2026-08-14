@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + PROPERTY LISTING)**
+**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + LISTING + PROPERTY DETAIL)**
 
-Status: 🟡 IN PROGRESS — Homepage and Property Listing complete, remaining pages pending
+Status: 🟡 IN PROGRESS — Homepage, Property Listing, and Property Detail complete, remaining pages pending
 
 ---
 
 ## CURRENT TASK
 
-Phase 4 homepage and property listing complete. Remaining pages (property detail, agents, locations, contact, blog) pending.
+Phase 4 homepage, property listing, and property detail complete. Remaining pages (agents, locations, contact, blog) pending.
 
 ---
 
@@ -87,8 +87,6 @@ None — Phase 3 complete.
 - Database, RLS, Storage all complete
 
 ### Phase 4 — Public Website (REMAINING)
-- Property listing page with advanced filters
-- Property detail page with gallery
 - Agent listing and detail pages
 - Location pages
 - Contact page
@@ -109,7 +107,12 @@ None — Phase 3 complete.
 - ✅ Property listing page (`/properties`) with filters, sorting, pagination, empty state
 - ✅ PropertyFilters client component (keyword, transaction type, property type, location, bedrooms, price range, sort)
 - ✅ getProperties() query with full filter/sort/pagination support
-- ⏳ Property detail page with gallery
+- ✅ Property detail page (`/properties/[slug]`) with gallery, features, amenities, location, agent, WhatsApp CTA, inquiry form, related properties
+- ✅ PropertyGallery client component (main image + thumbnails + prev/next)
+- ✅ InquiryForm client component (React Hook Form + Zod)
+- ✅ `/api/inquiries` server route with Zod validation
+- ✅ getPropertyBySlug() and getRelatedProperties() queries
+- ✅ Dynamic SEO metadata (generateMetadata) + not-found + loading states
 - ⏳ Agent listing and detail pages
 - ⏳ Location pages
 - ⏳ Contact page
@@ -188,6 +191,15 @@ None — Phase 3 complete.
 - `components/properties/PropertyFilters.tsx` — Client filter component (keyword, transaction type, property type, location, bedrooms, price range, sort) with collapsible advanced section
 - `components/shared/Pagination.tsx` — Reusable URL-based pagination component with page numbers and prev/next navigation
 - `lib/supabase/queries.ts` — Added `getProperties()` query with PropertyListFilters interface (filter, sort, pagination support)
+
+### Phase 4 — Property Detail (2026-08-14)
+- `app/properties/[slug]/page.tsx` — Property detail page (gallery, header, features, description, amenities, location, agent sidebar, WhatsApp CTA, inquiry form, related properties, breadcrumbs, dynamic SEO)
+- `app/properties/[slug]/not-found.tsx` — Professional Property Not Found page
+- `app/properties/[slug]/loading.tsx` — Detail page loading skeleton
+- `app/api/inquiries/route.ts` — Public inquiry submission API route with server-side Zod validation
+- `components/properties/PropertyGallery.tsx` — Interactive image gallery (main image, thumbnails, prev/next, placeholder fallback)
+- `components/forms/InquiryForm.tsx` — Client inquiry form (React Hook Form + Zod, submits to /api/inquiries)
+- `lib/supabase/queries.ts` — Added `getPropertyBySlug()` and `getRelatedProperties()` queries
 
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
@@ -276,15 +288,14 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 4 PROPERTY LISTING COMPLETE ✅**
+**PHASE 4 PROPERTY DETAIL COMPLETE ✅**
 
 Continue **Phase 4 — Public Website** with remaining pages:
 
-1. Build property detail page (`/properties/[slug]`) with gallery
-2. Build agent listing (`/agents`) and detail (`/agents/[slug]`) pages
-3. Create location pages (`/locations`, `/locations/[slug]`)
-4. Implement contact page (`/contact`)
-5. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
-6. Add SEO metadata for all new pages
+1. Build agent listing (`/agents`) and detail (`/agents/[slug]`) pages
+2. Create location pages (`/locations`, `/locations/[slug]`)
+3. Implement contact page (`/contact`)
+4. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
+5. Add SEO metadata for all new pages
 
-**Note:** No seed properties exist yet. Property listing shows EmptyState gracefully. Add seed properties when ready.
+**Note:** No seed properties exist yet. Property detail shows a proper not-found page for unknown slugs. Add seed properties when ready.

@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 4 — Property Detail (2026-08-14)
+
+#### Added
+- ✅ `app/properties/[slug]/page.tsx` — Property detail page with breadcrumbs, image gallery, property header (title/location/price/badges), features grid, full description, amenities, location section with map placeholder, agent sidebar, WhatsApp CTA, inquiry form, and related properties
+- ✅ `app/properties/[slug]/not-found.tsx` — Professional "Property Not Found" page with links back to `/properties` and `/contact`
+- ✅ `app/properties/[slug]/loading.tsx` — Detail page loading skeleton matching the two-column layout
+- ✅ `app/api/inquiries/route.ts` — Public `POST /api/inquiries` route with server-side Zod validation, inserts into `inquiries` via the anon server client (RLS allows public inserts)
+- ✅ `components/properties/PropertyGallery.tsx` — Client gallery with main image, thumbnails, prev/next controls, image counter, and graceful placeholder when no images exist
+- ✅ `components/forms/InquiryForm.tsx` — Client inquiry form (React Hook Form + Zod) with inline validation, loading, success, and error states
+- ✅ `lib/supabase/queries.ts` — Added `getPropertyBySlug()` (full detail relations: locations, agents, property_images, property_amenities) and `getRelatedProperties()` (same location → same transaction type fallback)
+
+#### SEO
+- ✅ Dynamic `generateMetadata()` builds per-property title, description, canonical URL, and Open Graph image
+- ✅ Uses `meta_title`/`meta_description`/`og_image` columns when present, falling back to property fields
+
+#### Empty / Not-Found Handling
+- Unknown slugs render the custom not-found page (no database errors leaked)
+- No amenities → "No amenities listed" state
+- No images → professional placeholder
+- No assigned agent → agent card omitted, WhatsApp CTA falls back to site contact number
+- Related properties section hidden when empty (no seed properties currently)
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings)
+- Production build: PASS
+- `/` and `/properties` render correctly
+- Nonexistent slug renders not-found page; no Supabase permission errors or unhandled exceptions
+- Inquiry API returns 400 on invalid input (Zod validation working)
+
+#### Notes
+- Next.js returns HTTP 200 with the not-found UI for streamed dynamic responses (documented Next.js behavior); static unknown routes still return 404
+- PropertyCard `View Details` already links to `/properties/[slug]` — no change needed
+
 ### Phase 4 — Property Listing (2026-08-14)
 
 #### Added
@@ -238,10 +272,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ✅ **Phase 1** — Architecture & Planning (2026-08-13)
 - ✅ **Phase 2** — Foundation (2026-08-13)
 - ✅ **Phase 3** — Supabase Backend (2026-08-13)
-- ✅ **Phase 4** — Homepage + Property Listing Complete (2026-08-14)
+- ✅ **Phase 4** — Homepage + Property Listing + Property Detail Complete (2026-08-14)
 
 ### Pending Phases
-- ⏳ **Phase 4** — Remaining Pages (Property Detail, Agents, Locations, Contact, Blog)
+- ⏳ **Phase 4** — Remaining Pages (Agents, Locations, Contact, Blog)
 - ⏳ **Phase 5** — Conversion Features (WhatsApp, Inquiries, Viewings, Favorites)
 - ⏳ **Phase 6** — Admin Dashboard (Authentication, CRUD, Management)
 - ⏳ **Phase 7** — SEO & Performance (Metadata, Schema, Optimization)
@@ -285,4 +319,4 @@ After each significant change:
 ---
 
 **Changelog Started:** 2026-08-13  
-**Project Status:** Phase 4 — Homepage + Property Listing Complete, Remaining Pages Pending
+**Project Status:** Phase 4 — Homepage + Property Listing + Property Detail Complete, Remaining Pages Pending
