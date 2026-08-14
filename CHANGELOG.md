@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 5 — Viewing Request System (2026-08-15)
+
+#### Added
+- ✅ `app/api/viewing-requests/route.ts` — Public `POST /api/viewing-requests` route with server-side Zod validation (name, email, phone, preferred_date YYYY-MM-DD, preferred_time HH:MM, optional message), past-date rejection, inserts into `viewing_requests` via the anon server client with `status = 'requested'`
+- ✅ `components/forms/ViewingRequestForm.tsx` — Client viewing request form (React Hook Form + Zod) with date input (`min` = today), time input, pre-filled message, inline validation, loading, success, and server-error states — mirrors the established `InquiryForm` idiom
+- ✅ `app/properties/[slug]/page.tsx` — Viewing request form added to the property detail sidebar above the inquiry form
+
+#### Security / RLS
+- Relies on existing RLS (`"Anyone can submit viewing requests"` public INSERT with `WITH CHECK (true)`; SELECT restricted to agents/admins) — no policy, schema, or migration changes
+- Server re-validates every submission; client schema only drives inline UX
+- No service_role used; anon server client only
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings)
+- Production build: PASS (`/api/viewing-requests` route registered)
+- Invalid payload → 400 with field-level errors; past date → 400; valid payload with nonexistent property → 500 caused by FK violation `viewing_requests_property_id_fkey` (proves anon INSERT privilege + RLS INSERT policy work end-to-end; the only blocker is zero properties in the database)
+- Regression: `/`, `/blog`, `/properties`, `/agents`, `/locations`, `/contact` all 200
+- `viewing_requests` table verified empty via anon REST SELECT (RLS hides rows; no test rows leaked)
+
+#### Notes
+- A fully successful live INSERT requires at least one real property row (FK constraint). No fake properties were created per project rules; the FK error path fully proves the submission pipeline
+- Form UI live-render test deferred until a property exists (same convention as inquiry form verification)
+
 ### Phase 4 — Blog (2026-08-15)
 
 #### Added

@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + LISTING + PROPERTY DETAIL + AGENTS + LOCATIONS + CONTACT + BLOG) ✅ COMPLETE**
+**PHASE 5 — CONVERSION FEATURES (VIEWING REQUESTS IN PROGRESS)**
 
-Status: 🟢 COMPLETE — All Phase 4 pages built, verified, and passing
+Status: 🟡 IN PROGRESS — Viewing request system built and verified; favorites and comparison pending
 
 ---
 
 ## CURRENT TASK
 
-Phase 4 fully complete. Awaiting commit approval for blog work, then Phase 5 — Conversion Features begins.
+Phase 4 fully complete and committed. Phase 5 viewing request system (`/api/viewing-requests` + property detail form) built and verified.
 
 ---
 
@@ -77,7 +77,12 @@ Phase 4 fully complete. Awaiting commit approval for blog work, then Phase 5 —
 
 ## IN PROGRESS
 
-None — Phase 3 complete.
+### Phase 5 — Conversion Features 🟡 IN PROGRESS (2026-08-15)
+- ✅ Viewing request system (public form on property detail + `/api/viewing-requests` route)
+- ⏳ Favorites system (requires Supabase Auth)
+- ⏳ Property comparison
+- ✅ WhatsApp integration (already shipped in Phase 4)
+- ✅ Inquiry forms (already shipped in Phase 4)
 
 ---
 
@@ -114,6 +119,10 @@ None — Phase 3 complete.
 - ✅ Location pages
 - ✅ Contact page
 - ✅ Blog listing and detail pages
+
+### Phase 5 — Conversion Features (REMAINING)
+- Favorites system
+- Property comparison
 
 ### Phase 5 — Conversion Features
 - WhatsApp integration
@@ -231,6 +240,11 @@ None — Phase 3 complete.
 - `lib/supabase/queries.ts` — Added `getBlogPosts()`, `getBlogCategories()`, `getBlogPostBySlug()`, and `getRelatedBlogPosts()` queries (published-only, anon client, count-first pagination)
 - `lib/utils.ts` — Added `formatDate()` utility
 
+### Phase 5 — Viewing Request System (2026-08-15)
+- `app/api/viewing-requests/route.ts` — Public viewing request submission API route with server-side Zod validation and past-date rejection (inserts into viewing_requests via anon server client, status = 'requested')
+- `components/forms/ViewingRequestForm.tsx` — Client viewing request form (React Hook Form + Zod, date/time inputs, submits to /api/viewing-requests)
+- `app/properties/[slug]/page.tsx` — Viewing request form integrated into property detail sidebar
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -318,13 +332,12 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 4 COMPLETE ✅ — Blog pages finished, awaiting commit approval**
+**PHASE 5 VIEWING REQUEST SYSTEM COMPLETE ✅ — verified, awaiting commit approval**
 
-Begin **Phase 5 — Conversion Features**:
+Continue **Phase 5 — Conversion Features**:
 
-1. WhatsApp integration and inquiry forms already exist (property detail + contact pages) — verify/extend as needed
-2. Build the viewing request system (`viewing_requests` table, migration 011) — public request form on property detail + `/api/viewing-requests` route
-3. Favorites system (requires Supabase Auth — deferred decision)
-4. Property comparison
+1. Favorites system (requires Supabase Auth — decide auth rollout first)
+2. Property comparison feature
+3. Optional: seed real properties/agents/locations so property detail forms (inquiry + viewing) can be live-tested end-to-end
 
-**Note:** No seed locations, agents, properties, or blog content exist yet. `contact_submissions` table is empty (verification row deleted). Add seed data when ready.
+**Note:** No seed locations, agents, properties, or blog content exist yet. `contact_submissions` and `viewing_requests` tables are empty. Add seed data when ready.

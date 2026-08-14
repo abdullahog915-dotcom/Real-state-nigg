@@ -40,6 +40,7 @@ import { Separator } from '@/components/ui/separator';
 import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { InquiryForm } from '@/components/forms/InquiryForm';
+import { ViewingRequestForm } from '@/components/forms/ViewingRequestForm';
 import { SectionHeading } from '@/components/shared/SectionHeading';
 import { getPropertyBySlug, getRelatedProperties } from '@/lib/supabase/queries';
 import { CONTACT_INFO } from '@/lib/constants';
@@ -393,6 +394,9 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 </CardContent>
               </Card>
             )}
+
+            {/* Viewing request form */}
+            <ViewingRequestForm propertyId={property.id} propertyTitle={property.title} />
 
             {/* Inquiry form */}
             <InquiryForm propertyId={property.id} propertyTitle={property.title} />
