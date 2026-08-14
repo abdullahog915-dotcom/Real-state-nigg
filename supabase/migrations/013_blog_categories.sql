@@ -3,7 +3,7 @@
 -- Stores blog post categories
 
 CREATE TABLE IF NOT EXISTS blog_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   description TEXT,

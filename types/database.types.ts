@@ -284,6 +284,35 @@ export interface Database {
           created_at?: string;
         };
       };
+      property_images: {
+        Row: {
+          id: string;
+          property_id: string;
+          url: string;
+          alt_text: string | null;
+          display_order: number;
+          is_featured: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          property_id: string;
+          url: string;
+          alt_text?: string | null;
+          display_order?: number;
+          is_featured?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          property_id?: string;
+          url?: string;
+          alt_text?: string | null;
+          display_order?: number;
+          is_featured?: boolean;
+          created_at?: string;
+        };
+      };
       property_amenities: {
         Row: {
           id: string;
@@ -579,7 +608,7 @@ export interface Database {
         };
       };
     };
-    Views: {};
+    Views: Record<string, never>;
     Functions: {
       is_admin: {
         Args: Record<string, never>;

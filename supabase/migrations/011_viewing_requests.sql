@@ -3,7 +3,7 @@
 -- Stores property viewing appointments
 
 CREATE TABLE IF NOT EXISTS viewing_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id UUID REFERENCES properties(id) ON DELETE SET NULL NOT NULL,
   name TEXT NOT NULL,
   email TEXT NOT NULL,

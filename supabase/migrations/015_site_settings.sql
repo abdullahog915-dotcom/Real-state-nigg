@@ -3,7 +3,7 @@
 -- Stores configurable site settings
 
 CREATE TABLE IF NOT EXISTS site_settings (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key TEXT UNIQUE NOT NULL,
   value TEXT,
   type TEXT DEFAULT 'text' CHECK (type IN ('text', 'number', 'boolean', 'json')),
@@ -24,7 +24,7 @@ CREATE TRIGGER update_site_settings_updated_at
 
 -- Social Links Table
 CREATE TABLE IF NOT EXISTS social_links (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   platform TEXT NOT NULL CHECK (platform IN (
     'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'whatsapp'
   )),

@@ -3,7 +3,7 @@
 -- Links properties to their amenities
 
 CREATE TABLE IF NOT EXISTS property_amenities (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id UUID REFERENCES properties(id) ON DELETE CASCADE NOT NULL,
   amenity_id UUID REFERENCES amenities(id) ON DELETE CASCADE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
