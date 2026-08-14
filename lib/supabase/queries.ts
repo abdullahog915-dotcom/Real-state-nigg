@@ -776,6 +776,100 @@ export async function getAgents(keyword?: string) {
 }
 
 /**
+ * Get all locations for the locations listing page.
+ * Includes a count of publicly visible properties per location.
+ * RLS allows public SELECT on locations without restrictions.
+ */
+export async function getLocations() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select(`
+      id,
+      name,
+      slug,
+      city,
+      state,
+      country,
+      description,
+      is_featured,
+      display_order,
+      properties (
+        id,
+        status
+      )
+    `)
+    .in('properties.status', ['published', 'featured'])
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching locations:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Get a single location by slug.
+ * Returns null when the slug does not match any location.
+ */
+export async function getLocationBySlug(slug: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select(`
+      id,
+      name,
+      slug,
+      city,
+      state,
+      country,
+      description,
+      is_featured,
+      display_order,
+      created_at
+    `)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (error) {
+    // PGRST116 (row not found) is expected for unknown slugs
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching location by slug:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Get publicly visible properties in a location.
+ */
+export async function getLocationProperties(locationId: string, limit = 12) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(PROPERTY_DETAIL_COLUMNS)
+    .eq('location_id', locationId)
+    .in('status', ['published', 'featured'])
+    .order('published_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching location properties:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/**
  * Get a single active agent by slug.
  * Returns null when the slug does not match an active agent.
  */

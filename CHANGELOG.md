@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 4 — Locations (2026-08-15)
+
+#### Added
+- ✅ `app/locations/page.tsx` — Location listing page with SEO metadata, location count, responsive 4-column grid reusing the new `LocationCard`, and empty state handling
+- ✅ `app/locations/loading.tsx` — Locations listing loading skeleton
+- ✅ `app/locations/[slug]/page.tsx` — Location detail page with breadcrumbs, featured badge, city/state/country, full description, CTA linking to `/properties?location=<slug>` (compatible with the existing listing location filter), and the location's properties via reused `PropertyCard`
+- ✅ `app/locations/[slug]/loading.tsx` — Location detail loading skeleton
+- ✅ `app/locations/[slug]/not-found.tsx` — Professional "Location Not Found" page with links to `/locations` and `/properties`
+- ✅ `components/locations/LocationCard.tsx` — Location card with featured badge, city/state, description snippet, and live property count
+- ✅ `lib/supabase/queries.ts` — Added `getLocations()` (all locations with embedded published/featured property count), `getLocationBySlug()` (`maybeSingle()`, PGRST116 tolerated), and `getLocationProperties()` (published/featured properties in a location)
+
+#### SEO
+- ✅ Static metadata for `/locations`; dynamic `generateMetadata()` for `/locations/[slug]` (name, city/state title, description or generated fallback, canonical URL)
+
+#### Empty / Not-Found Handling
+- No locations in database → "No Locations Listed Yet" empty state with browse CTA
+- Unknown location slug → custom not-found page (no database errors leaked)
+- Location with no properties → EmptyState linking to `/properties`
+
+#### Security / RLS
+- Queries rely on existing RLS (`"Anyone can view locations"` public SELECT); `locations` has no status column — all rows are public by design
+- Property visibility restricted to `published`/`featured` via existing RLS + explicit filters
+- No service_role used; anon server client only; no schema, migration, or policy changes
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings)
+- Production build: PASS (`/locations` and `/locations/[slug]` routes registered)
+- `/`, `/properties`, `/agents`, `/locations`, `/locations/lagos`, `/locations/nonexistent-location-slug`, `/properties/this-property-does-not-exist` all return 200 with correct content
+- Database verified empty of locations (seed never run) — empty states tested per project rules
+
+#### Notes
+- Homepage and footer already link to `/locations` and `/locations/[slug]` — those links now resolve to real pages
+- Property count on each card uses an embedded resource filter (`properties.status in (published,featured)`), which filters joined rows only — locations with zero properties still render
+
 ### Phase 4 — Agents (2026-08-14)
 
 #### Added
