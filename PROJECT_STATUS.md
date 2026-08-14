@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + LISTING + PROPERTY DETAIL)**
+**PHASE 4 — PUBLIC WEBSITE (HOMEPAGE + LISTING + PROPERTY DETAIL + AGENTS)**
 
-Status: 🟡 IN PROGRESS — Homepage, Property Listing, and Property Detail complete, remaining pages pending
+Status: 🟡 IN PROGRESS — Homepage, Property Listing, Property Detail, and Agents complete, remaining pages pending
 
 ---
 
 ## CURRENT TASK
 
-Phase 4 homepage, property listing, and property detail complete. Remaining pages (agents, locations, contact, blog) pending.
+Phase 4 homepage, property listing, property detail, and agents complete. Remaining pages (locations, contact, blog) pending.
 
 ---
 
@@ -201,6 +201,15 @@ None — Phase 3 complete.
 - `components/forms/InquiryForm.tsx` — Client inquiry form (React Hook Form + Zod, submits to /api/inquiries)
 - `lib/supabase/queries.ts` — Added `getPropertyBySlug()` and `getRelatedProperties()` queries
 
+### Phase 4 — Agents (2026-08-14)
+- `app/agents/page.tsx` — Agent listing page (SEO metadata, name search, responsive grid, empty state)
+- `app/agents/loading.tsx` — Agents listing loading skeleton
+- `app/agents/[slug]/page.tsx` — Agent detail page (breadcrumbs, photo, specialization, locations, bio, contact sidebar with WhatsApp/phone/email, agent's property listings)
+- `app/agents/[slug]/loading.tsx` — Agent detail loading skeleton
+- `app/agents/[slug]/not-found.tsx` — Professional Agent Not Found page
+- `components/agents/AgentSearch.tsx` — Client name search driving `?q=` URL parameter
+- `lib/supabase/queries.ts` — Added `getAgents()`, `getAgentBySlug()`, and `getAgentProperties()` queries
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -288,14 +297,13 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 4 PROPERTY DETAIL COMPLETE ✅**
+**PHASE 4 AGENTS COMPLETE ✅**
 
 Continue **Phase 4 — Public Website** with remaining pages:
 
-1. Build agent listing (`/agents`) and detail (`/agents/[slug]`) pages
-2. Create location pages (`/locations`, `/locations/[slug]`)
-3. Implement contact page (`/contact`)
-4. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
-5. Add SEO metadata for all new pages
+1. Create location pages (`/locations`, `/locations/[slug]`)
+2. Implement contact page (`/contact`)
+3. Build blog listing (`/blog`) and detail (`/blog/[slug]`) pages
+4. Add SEO metadata for all new pages
 
-**Note:** No seed properties exist yet. Property detail shows a proper not-found page for unknown slugs. Add seed properties when ready.
+**Note:** No seed agents or properties exist yet. Agents listing shows a proper empty state and unknown agent slugs render the not-found page. Add seed agents when ready.

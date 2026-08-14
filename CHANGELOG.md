@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 4 — Agents (2026-08-14)
+
+#### Added
+- ✅ `app/agents/page.tsx` — Agent listing page with SEO metadata, agent count, name search, responsive 4-column grid reusing `AgentCard`, and empty state handling
+- ✅ `app/agents/loading.tsx` — Agents listing loading skeleton
+- ✅ `app/agents/[slug]/page.tsx` — Agent detail page with breadcrumbs, photo, specialization badges, covered locations, full bio, contact sidebar (WhatsApp CTA, phone, email), and the agent's property listings via reused `PropertyCard`
+- ✅ `app/agents/[slug]/loading.tsx` — Agent detail loading skeleton
+- ✅ `app/agents/[slug]/not-found.tsx` — Professional "Agent Not Found" page with links to `/agents` and `/properties`
+- ✅ `components/agents/AgentSearch.tsx` — Client name search driving the `?q=` URL parameter
+- ✅ `lib/supabase/queries.ts` — Added `getAgents()` (active agents, ordered by display_order/name, optional name search), `getAgentBySlug()` (active-only, `maybeSingle()`), and `getAgentProperties()` (published/featured properties for an agent)
+
+#### SEO
+- ✅ Static metadata for `/agents`; dynamic `generateMetadata()` for `/agents/[slug]` (name, truncated bio, canonical URL, Open Graph photo)
+
+#### Empty / Not-Found Handling
+- No agents in database → "No Agents Listed Yet" empty state with contact CTA
+- Search with no matches → "No Agents Found" with clear-search action
+- Unknown agent slug → custom not-found page (no database errors leaked)
+- Agent with no listings → EmptyState linking to `/properties`
+- No contact details → explanatory fallback text
+
+#### Security / RLS
+- Queries rely on existing RLS (public SELECT only exposes `is_active = true` agents) plus an explicit `is_active` filter
+- No service_role used; anon server client only; no schema, migration, or policy changes
+
+#### Verification
+- TypeScript: PASS (0 errors)
+- ESLint: PASS (0 errors, 0 warnings)
+- Production build: PASS (`/agents` and `/agents/[slug]` routes registered)
+- `/`, `/properties`, `/properties?page=2`, `/agents`, `/agents?q=chioma`, `/agents/nonexistent-agent-slug`, `/properties/this-property-does-not-exist` all return 200 with correct content
+- Database verified empty of agents (seed never run) — empty states tested per project rules
+
+#### Notes
+- Fixed initial PostgREST error `operator does not exist: text[] ~~* unknown` — `ilike` cannot target `text[]` columns (`specialization`, `locations`), so agent search filters on `name` only
+
 ### Phase 4 — Property Detail (2026-08-14)
 
 #### Added

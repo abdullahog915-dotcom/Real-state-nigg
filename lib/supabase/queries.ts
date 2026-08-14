@@ -732,3 +732,105 @@ export async function getRelatedProperties(
 
   return results.slice(0, limit);
 }
+
+/**
+ * Get all active agents for the agents listing page.
+ * RLS only exposes agents with is_active = true.
+ * Optional keyword filters by name (PostgREST ilike cannot target the
+ * text[] specialization/locations columns).
+ */
+export async function getAgents(keyword?: string) {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('agents')
+    .select(`
+      id,
+      name,
+      slug,
+      email,
+      phone,
+      whatsapp,
+      bio,
+      photo_url,
+      specialization,
+      locations,
+      display_order
+    `)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (keyword) {
+    query = query.ilike('name', `%${keyword}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching agents:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Get a single active agent by slug.
+ * Returns null when the slug does not match an active agent.
+ */
+export async function getAgentBySlug(slug: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('agents')
+    .select(`
+      id,
+      name,
+      slug,
+      email,
+      phone,
+      whatsapp,
+      bio,
+      photo_url,
+      specialization,
+      locations,
+      display_order,
+      created_at
+    `)
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) {
+    // PGRST116 (row not found) is expected for unknown slugs
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching agent by slug:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Get publicly visible properties assigned to an agent.
+ */
+export async function getAgentProperties(agentId: string, limit = 12) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(PROPERTY_DETAIL_COLUMNS)
+    .eq('agent_id', agentId)
+    .in('status', ['published', 'featured'])
+    .order('published_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching agent properties:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
