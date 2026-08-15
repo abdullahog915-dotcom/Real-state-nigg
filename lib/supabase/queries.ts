@@ -1270,3 +1270,648 @@ export async function getAgentProperties(agentId: string, limit = 12) {
 
   return data ?? [];
 }
+
+// =====================================================================
+// ADMIN QUERIES
+//
+// Used exclusively by the /admin dashboard and /api/admin routes.
+// They run with the session user's Supabase client — the admin RLS
+// policies (migration 016) only expose rows when is_admin() is true,
+// so these queries return nothing for non-admin sessions even if the
+// calling code forgot a guard. Callers must still perform the admin
+// check before rendering or responding.
+// =====================================================================
+
+/** Count rows with a HEAD request; returns 0 on error (no fake numbers). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function countRows(query: any): Promise<number> {
+  const { count, error } = await query;
+  if (error) {
+    console.error('Error counting rows for admin stats:', error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+export interface AdminDashboardStats {
+  publishedProperties: number;
+  draftProperties: number;
+  activeAgents: number;
+  locations: number;
+  newInquiries: number;
+  pendingViewingRequests: number;
+  newContactSubmissions: number;
+  publishedBlogPosts: number;
+  registeredUsers: number;
+}
+
+/**
+ * Live counts for the admin dashboard overview.
+ * All values come from real database queries.
+ */
+export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+  const supabase = await createClient();
+
+  const head = (table: string) =>
+    supabase.from(table).select('*', { count: 'exact', head: true });
+
+  const [
+    publishedProperties,
+    draftProperties,
+    activeAgents,
+    locations,
+    newInquiries,
+    pendingViewingRequests,
+    newContactSubmissions,
+    publishedBlogPosts,
+    registeredUsers,
+  ] = await Promise.all([
+    countRows(head('properties').in('status', ['published', 'featured'])),
+    countRows(head('properties').eq('status', 'draft')),
+    countRows(head('agents').eq('is_active', true)),
+    countRows(head('locations')),
+    countRows(head('inquiries').eq('status', 'new')),
+    countRows(head('viewing_requests').eq('status', 'requested')),
+    countRows(head('contact_submissions').eq('status', 'new')),
+    countRows(head('blog_posts').eq('status', 'published')),
+    countRows(head('profiles')),
+  ]);
+
+  return {
+    publishedProperties,
+    draftProperties,
+    activeAgents,
+    locations,
+    newInquiries,
+    pendingViewingRequests,
+    newContactSubmissions,
+    publishedBlogPosts,
+    registeredUsers,
+  };
+}
+
+/** Latest inquiries for the dashboard activity feed. */
+export async function getRecentInquiries(limit = 5) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('inquiries')
+    .select('id, name, status, created_at, properties (title, slug)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching recent inquiries:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/** Latest viewing requests for the dashboard activity feed. */
+export async function getRecentViewingRequests(limit = 5) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('viewing_requests')
+    .select('id, name, status, preferred_date, created_at, properties (title, slug)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching recent viewing requests:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+export interface AdminPropertyListFilters {
+  search?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** Embedded relation shape — Supabase embeds may arrive as object or array. */
+type AdminEmbed<T> = T | T[] | null;
+
+export interface AdminPropertySummary {
+  id: string;
+  title: string;
+  slug: string;
+  property_type: string | null;
+  transaction_type: string | null;
+  status: string;
+  price: number | null;
+  currency: string | null;
+  is_featured: boolean;
+  created_at: string;
+  updated_at: string | null;
+  locations?: AdminEmbed<{ id: string; name: string; city: string }>;
+  agents?: AdminEmbed<{ id: string; name: string }>;
+}
+
+export interface AdminPropertyListResult {
+  data: AdminPropertySummary[];
+  count: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminAgentSummary {
+  id: string;
+  name: string;
+  slug: string;
+  email: string | null;
+  phone: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  properties?: AdminEmbed<{ id: string }>;
+}
+
+export interface AdminLocationSummary {
+  id: string;
+  name: string;
+  slug: string;
+  city: string;
+  state: string;
+  country: string;
+  is_featured: boolean;
+  display_order: number;
+  properties?: AdminEmbed<{ id: string }>;
+}
+
+export interface AdminInquirySummary {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string;
+  source: string | null;
+  status: string | null;
+  notes: string | null;
+  created_at: string;
+  properties?: AdminEmbed<{ title: string; slug: string }>;
+  agents?: AdminEmbed<{ id: string; name: string }>;
+}
+
+export interface AdminViewingRequestSummary {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  preferred_date: string;
+  preferred_time: string | null;
+  message: string | null;
+  status: string | null;
+  notes: string | null;
+  created_at: string;
+  properties?: AdminEmbed<{ title: string; slug: string }>;
+  agents?: AdminEmbed<{ id: string; name: string }>;
+}
+
+export interface AdminContactSubmissionSummary {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string;
+  status: string | null;
+  created_at: string;
+}
+
+export interface AdminBlogPostSummary {
+  id: string;
+  title: string;
+  slug: string;
+  status: string | null;
+  published_at: string | null;
+  created_at: string;
+  blog_categories?: AdminEmbed<{ id: string; name: string; slug: string }>;
+}
+
+const ADMIN_PROPERTY_LIST_COLUMNS = `
+  id,
+  title,
+  slug,
+  property_type,
+  transaction_type,
+  status,
+  price,
+  currency,
+  is_featured,
+  created_at,
+  updated_at,
+  locations (id, name, city),
+  agents (id, name)
+`;
+
+/**
+ * Admin property list with search, status filter and count-first pagination.
+ * Unlike public queries this includes every status (draft, archived, ...).
+ */
+export async function getAdminProperties(
+  filters: AdminPropertyListFilters = {}
+): Promise<AdminPropertyListResult> {
+  const { search, status, page = 1, pageSize = 20 } = filters;
+  const supabase = await createClient();
+
+  const cleanSearch = search?.trim();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let countQuery: any = supabase
+    .from('properties')
+    .select('*', { count: 'exact', head: true });
+  if (status) countQuery = countQuery.eq('status', status);
+  if (cleanSearch) countQuery = countQuery.ilike('title', `%${cleanSearch}%`);
+
+  const { count, error: countError } = await countQuery;
+  if (countError) {
+    console.error('Error counting admin properties:', countError.message);
+    return { data: [], count: 0, totalPages: 0, page, pageSize };
+  }
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  if (totalCount === 0 || page > totalPages || page < 1) {
+    return { data: [], count: totalCount, totalPages, page, pageSize };
+  }
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let dataQuery: any = supabase
+    .from('properties')
+    .select(ADMIN_PROPERTY_LIST_COLUMNS)
+    .order('created_at', { ascending: false });
+  if (status) dataQuery = dataQuery.eq('status', status);
+  if (cleanSearch) dataQuery = dataQuery.ilike('title', `%${cleanSearch}%`);
+
+  const { data, error } = await dataQuery.range(from, to);
+
+  if (error) {
+    console.error('Error fetching admin properties:', error.message);
+    return { data: [], count: totalCount, totalPages, page, pageSize };
+  }
+
+  return {
+    data: (data ?? []) as AdminPropertySummary[],
+    count: totalCount,
+    totalPages,
+    page,
+    pageSize,
+  };
+}
+
+/**
+ * Full property row for the admin edit form, including gallery images
+ * and assigned amenity ids. Returns null for unknown ids.
+ */
+export async function getAdminPropertyById(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(`
+      *,
+      property_images (id, url, alt_text, display_order, is_featured),
+      property_amenities (amenity_id)
+    `)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching admin property:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/** All locations as select options for admin forms. */
+export async function getAdminLocationOptions() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select('id, name, city, state')
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching location options:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/** All agents as select options for admin forms. */
+export async function getAdminAgentOptions() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('agents')
+    .select('id, name, is_active')
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching agent options:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/** All amenities as checkbox options for the property form. */
+export async function getAdminAmenityOptions() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('amenities')
+    .select('id, name, category')
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching amenity options:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/** Admin agent list including inactive agents and assigned property counts. */
+export async function getAdminAgents(search?: string): Promise<AdminAgentSummary[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('agents')
+    .select('id, name, slug, email, phone, is_active, display_order, created_at, properties (id)')
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  const cleanSearch = search?.trim();
+  if (cleanSearch) query = query.ilike('name', `%${cleanSearch}%`);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching admin agents:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AdminAgentSummary[];
+}
+
+/** Full agent row for the admin edit form. Returns null for unknown ids. */
+export async function getAdminAgentById(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('agents')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching admin agent:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/** Admin location list with total property counts per location. */
+export async function getAdminLocations(search?: string): Promise<AdminLocationSummary[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('locations')
+    .select('id, name, slug, city, state, country, is_featured, display_order, properties (id)')
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  const cleanSearch = search?.trim();
+  if (cleanSearch) query = query.ilike('name', `%${cleanSearch}%`);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching admin locations:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AdminLocationSummary[];
+}
+
+/** Full location row for the admin edit form. Returns null for unknown ids. */
+export async function getAdminLocationById(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching admin location:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/** Admin inquiry list (all statuses) with property and assigned agent. */
+export async function getAdminInquiries(
+  status?: string,
+  limit = 200
+): Promise<AdminInquirySummary[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('inquiries')
+    .select(`
+      id,
+      name,
+      email,
+      phone,
+      message,
+      source,
+      status,
+      notes,
+      created_at,
+      properties (title, slug),
+      agents (id, name)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (status) query = query.eq('status', status);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching admin inquiries:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AdminInquirySummary[];
+}
+
+/** Admin viewing request list with property and agent. */
+export async function getAdminViewingRequests(
+  status?: string,
+  limit = 200
+): Promise<AdminViewingRequestSummary[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('viewing_requests')
+    .select(`
+      id,
+      name,
+      email,
+      phone,
+      preferred_date,
+      preferred_time,
+      message,
+      status,
+      notes,
+      created_at,
+      properties (title, slug),
+      agents (id, name)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (status) query = query.eq('status', status);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching admin viewing requests:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AdminViewingRequestSummary[];
+}
+
+/** Admin contact submission list. */
+export async function getAdminContactSubmissions(
+  status?: string,
+  limit = 200
+): Promise<AdminContactSubmissionSummary[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('contact_submissions')
+    .select('id, name, email, phone, message, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (status) query = query.eq('status', status);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching admin contact submissions:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AdminContactSubmissionSummary[];
+}
+
+/** Admin blog post list including drafts and archived posts. */
+export async function getAdminBlogPosts(search?: string): Promise<AdminBlogPostSummary[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('blog_posts')
+    .select('id, title, slug, status, published_at, created_at, blog_categories (id, name, slug)')
+    .order('created_at', { ascending: false });
+
+  const cleanSearch = search?.trim();
+  if (cleanSearch) query = query.ilike('title', `%${cleanSearch}%`);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching admin blog posts:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as AdminBlogPostSummary[];
+}
+
+/** Full blog post row for the admin edit form. Returns null for unknown ids. */
+export async function getAdminBlogPostById(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching admin blog post:', error.message);
+    }
+    return null;
+  }
+
+  return data;
+}
+
+/** Admin blog category list with published and draft post counts. */
+export async function getAdminBlogCategories() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('blog_categories')
+    .select('id, name, slug, description, display_order, blog_posts (id)')
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching admin blog categories:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/** Registered user profiles for the admin users page. */
+export async function getAdminUsers() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, user_id, first_name, last_name, phone, role, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching admin users:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}

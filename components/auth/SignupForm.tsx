@@ -9,7 +9,7 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase/client';
-import { getSafeRedirectPath } from '@/lib/auth';
+import { getSafeRedirectPath } from '@/lib/redirects';
 import { SITE_CONFIG } from '@/lib/constants';
 
 const signupFormSchema = z

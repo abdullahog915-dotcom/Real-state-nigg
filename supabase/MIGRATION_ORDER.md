@@ -21,6 +21,7 @@ Run Supabase migrations in this exact order:
 15. `015_site_settings.sql` - Configurable site settings + social links
 16. `016_rls_policies.sql` - Row Level Security policies (ALL tables)
 17. `017_storage_buckets.sql` - Storage buckets + policies
+18. `018_protect_profile_role.sql` - Block non-admin profile role changes
 
 ## After Migrations
 
@@ -38,11 +39,13 @@ Run seed data:
 - Migration 014 depends on: 013
 - Migration 016 depends on: ALL previous tables
 - Migration 017 depends on: 016 (uses is_admin() function)
+- Migration 018 depends on: 016 (uses is_admin() function)
 
 ## Important Notes
 
 1. **Never run migrations out of order** - Dependencies will fail
 2. **Run 016_rls_policies.sql only after all tables exist** - It references all tables
 3. **Run 017_storage_buckets.sql last** - It uses RLS helper functions from 016
-4. **Seed data should run after all migrations complete**
-5. **Use transactions when possible** - `BEGIN;` ... `COMMIT;` for safety
+4. **Run 018_protect_profile_role.sql after 016** - It uses is_admin() and protects profile role updates
+5. **Seed data should run after all migrations complete**
+6. **Use transactions when possible** - `BEGIN;` ... `COMMIT;` for safety

@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase/client';
-import { getSafeRedirectPath } from '@/lib/auth';
+import { getSafeRedirectPath } from '@/lib/redirects';
 
 const loginFormSchema = z.object({
   email: z.string().trim().email('Enter a valid email address').max(255),

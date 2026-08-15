@@ -1,35 +1,32 @@
 /**
- * Auth helpers shared by the login/signup pages and the auth callback route.
+ * Server-only auth helpers used by the admin API routes.
+ *
+ * Client-safe redirect validation lives in `lib/redirects.ts` — keep it
+ * there, this module imports server-only Supabase code.
  */
+
+import { NextResponse } from 'next/server';
+import { getUser, isAdmin } from '@/lib/supabase/server';
 
 /**
- * Validates a `?next=` redirect target.
+ * Server-side guard for `/api/admin/*` route handlers.
  *
- * Only internal relative paths are accepted. This blocks open redirects:
- * - protocol-relative URLs (`//evil.com`)
- * - backslash variants (`/\evil.com`, normalized by some browsers)
- * - absolute URLs and anything resolving to a foreign origin
- * - control characters / whitespace that could confuse URL parsers
+ * Returns `null` when the request comes from an authenticated admin;
+ * otherwise it returns the response the handler should send back
+ * (401 unauthenticated, 403 authenticated non-admin).
+ *
+ * Admin identity always comes from the session — never from client input.
  */
-export function getSafeRedirectPath(
-  value: string | string[] | null | undefined
-): string | null {
-  if (typeof value !== 'string') return null;
-
-  const path = value.trim();
-
-  if (!path.startsWith('/')) return null;
-  if (path.startsWith('//')) return null;
-  if (path.charAt(1) === '\\') return null;
-  if (/[\s\u0000-\u001f]/.test(path)) return null;
-
-  // Resolve against a fixed dummy origin; reject anything that escapes it.
-  try {
-    const resolved = new URL(path, 'http://internal');
-    if (resolved.origin !== 'http://internal') return null;
-  } catch {
-    return null;
+export async function adminApiGuard(): Promise<Response | null> {
+  const user = await getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  return path;
+  const admin = await isAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
+
+  return null;
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -53,17 +54,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The admin dashboard (/admin/*) renders its own shell — no public chrome.
+  // The path comes from the x-current-path header set by the middleware.
+  const headerList = await headers();
+  const isAdminRoute = (headerList.get("x-current-path") ?? "").startsWith("/admin");
+
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col antialiased">
-        <Navbar />
+        {!isAdminRoute && <Navbar />}
         <main className="flex-1">{children}</main>
-        <Footer />
+        {!isAdminRoute && <Footer />}
       </body>
     </html>
   );

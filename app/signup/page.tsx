@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getUser } from '@/lib/supabase/server';
-import { getSafeRedirectPath } from '@/lib/auth';
+import { getSafeRedirectPath } from '@/lib/redirects';
 import { SignupForm } from '@/components/auth/SignupForm';
 
 export const metadata: Metadata = {

@@ -2,7 +2,7 @@
 
 **Project:** Nigerian Real Estate Platform  
 **Version:** 1.0.0  
-**Last Updated:** 2026-08-13
+**Last Updated:** 2026-08-15
 
 ---
 
@@ -116,6 +116,8 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - Use `lib/supabase/middleware.ts` for auth middleware
 - NEVER expose `SUPABASE_SERVICE_ROLE_KEY` to client
 - Always use `SUPABASE_ANON_KEY` for client-side
+- Admin operations use the session client + `isAdmin()`/RLS (`is_admin()`) — never service_role
+- Modules imported by Client Components must stay client-safe (no `next/headers` imports) — e.g. `lib/redirects.ts` holds `getSafeRedirectPath()`, while server-only helpers like `adminApiGuard()` live in `lib/auth.ts`
 
 ### Database Architecture
 - 15 tables: profiles, agents, locations, properties, property_images, amenities, property_amenities, favorites, inquiries, viewing_requests, contact_submissions, blog_categories, blog_posts, site_settings, social_links
@@ -179,7 +181,7 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 
 ### Migration Rules
 1. **Never run migrations out of order**
-2. Migrations are numbered 001-017
+2. Migrations are numbered 001-018
 3. Run in exact sequence (see `supabase/MIGRATION_ORDER.md`)
 4. **Never recreate existing tables**
 5. If table exists, create new migration to alter it
@@ -192,6 +194,7 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - `002-015` - Table definitions
 - `016_rls_policies.sql` - RLS policies (depends on ALL tables)
 - `017_storage_buckets.sql` - Storage buckets (depends on RLS functions)
+- `018_protect_profile_role.sql` - Role-escalation protection trigger on `profiles` (run after 016)
 
 ### Seed Data
 - Located in `supabase/seed.sql`
@@ -445,16 +448,18 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - Property comparison ✅ (2026-08-15)
 - Auth foundation ✅ (2026-08-15 — login/signup/callback/sign-out/navbar)
 
-### Phase 6 — Admin Dashboard
-- Admin authentication
-- Dashboard overview
-- Property CRUD
-- Image upload
-- Agent CRUD
-- Lead management
-- Viewing management
-- Blog CMS
-- Settings management
+### Phase 6 — Admin Dashboard ✅ COMPLETE (2026-08-15)
+- Admin authentication ✅ (layout gate + `adminApiGuard()` + RLS; no service_role)
+- Dashboard overview ✅ (`/admin` live stats)
+- Property CRUD ✅ (incl. gallery rows + amenities; image *upload* endpoint still pending)
+- Image upload ⬜ (gallery managed via URL inputs; storage buckets exist, no upload endpoint yet)
+- Agent CRUD ✅
+- Location CRUD ✅
+- Lead management ✅ (inquiries pipeline, no delete by design)
+- Viewing management ✅ (+ contact submissions)
+- Blog CMS ✅ (posts + categories)
+- Users overview ✅ (read-only; roles protected by migration 018, managed in DB)
+- Settings management ⬜ (deferred)
 
 ### Phase 7 — SEO & Performance
 - Metadata optimization
@@ -608,6 +613,8 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 
 ---
 
-**Last Updated:** 2026-08-15  
-**Current Phase:** Phase 5 — Conversion Features ✅ COMPLETE (Viewing Requests + Property Comparison + Auth Foundation + Favorites)
-**Status:** Favorites built and verified, awaiting commit approval; Phase 6 — Admin Dashboard is next
+**Last Updated:** 2026-08-15
+
+**Current Phase:** Phase 6 — Admin Dashboard ✅ COMPLETE
+
+**Status:** Admin dashboard built and verified, awaiting commit approval; migration 018 applied to the live database 2026-08-15; Phase 7 — SEO & Performance is next

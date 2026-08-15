@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getSafeRedirectPath } from '@/lib/auth';
+import { getSafeRedirectPath } from '@/lib/redirects';
 
 /**
  * Auth callback for Supabase email confirmation / session exchange.

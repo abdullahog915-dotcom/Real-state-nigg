@@ -3,6 +3,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Middleware helper for authentication
 export async function updateSession(request: NextRequest) {
+  // Expose the real request path to Server Components (the root layout
+  // hides public chrome on /admin routes). Set unconditionally so a
+  // client-supplied header value is always overwritten.
+  request.headers.set('x-current-path', request.nextUrl.pathname);
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

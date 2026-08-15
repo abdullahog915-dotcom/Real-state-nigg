@@ -8,6 +8,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 6 — Admin Dashboard (2026-08-15)
+
+#### Architecture
+- Full admin dashboard under `/admin` built on the existing Supabase SSR architecture — every admin query runs through the session client, so the existing admin RLS policies (migration 016, `is_admin()` SECURITY DEFINER) act as a second authorization layer even if a page guard were ever missed
+- Three-layer authorization: (1) `app/admin/layout.tsx` server gate — anonymous → `redirect('/login?next=/admin')`, authenticated non-admin → minimal `AccessDenied` screen with zero admin data/structure; (2) `adminApiGuard()` as the first line of every `/api/admin/*` handler (401 anon / 403 non-admin); (3) database RLS admin policies
+- No `SUPABASE_SERVICE_ROLE_KEY` anywhere; admin identity always derived from the authenticated session (`getUser()`/`isAdmin()`), never from client input
+- Public Navbar/Footer hidden on `/admin` via an `x-current-path` header set unconditionally by the middleware (client-spoofable header is always overwritten server-side)
+- New migration `018_protect_profile_role.sql`: BEFORE UPDATE trigger on `profiles` that blocks non-admin role changes (closes the self-promotion hole where any user could set their own `role = 'admin'` through the open profile UPDATE policy). **Applied to the live database on 2026-08-15 via `supabase db query --linked`; function + trigger existence verified afterwards**
+
+#### Added — Pages
+- ✅ `/admin` — dashboard overview: 8 live stat cards (published + draft properties, active agents, locations, new inquiries, pending viewing requests, new contact submissions, published blog posts) all from real HEAD-count queries, registered-users line, recent inquiries + viewing requests activity feeds
+- ✅ `/admin/properties` (+ `/new`, `/[id]/edit`) — list with search/status filter/count-first pagination; create/edit form with basics, pricing, location/agent assignment, amenities checkboxes grouped by category, gallery rows with single-cover enforcement, SEO fields; inline featured toggle; delete with FK-behavior warning
+- ✅ `/admin/agents` (+ `/new`, `/[id]/edit`) — list with search, property counts, active toggle, display order; full create/edit
+- ✅ `/admin/locations` (+ `/new`, `/[id]/edit`) — list with search, property counts, featured toggle, display order; full create/edit
+- ✅ `/admin/inquiries` — status pipeline `new/contacted/qualified/negotiation/won/lost` (actual CHECK constraint), status filter, detail dialog with message + editable internal notes; no delete by design (RLS grants SELECT+UPDATE only)
+- ✅ `/admin/viewing-requests` — statuses `requested/confirmed/completed/cancelled`, detail dialog with preferred date/time + notes
+- ✅ `/admin/contact-submissions` — statuses `new/read/replied/archived`, detail dialog
+- ✅ `/admin/blog` (+ `/new`, `/[id]/edit`) — post list with search and inline status select; create/edit with category assignment, excerpt, featured image URL, SEO title/description; `author_id` always session-derived; `published_at` handled by the DB trigger
+- ✅ `/admin/categories` — create/edit/delete dialog manager with post counts (delete leaves posts uncategorised via ON DELETE SET NULL)
+- ✅ `/admin/users` — read-only registered profile list (name, phone, role, joined); role editing intentionally not exposed (protected by migration 018; managed in the database)
+- ✅ `app/admin/loading.tsx` — admin loading skeleton; admin layout metadata is `noindex`
+
+#### Added — API routes (all guarded by `adminApiGuard()`)
+- ✅ `POST/PATCH/DELETE /api/admin/properties[/[id]]` — Zod validation mirroring migration 006/007/008; gallery replace keeps at most one featured image (DB partial unique index) and syncs `featured_image`; amenities replaced atomically; 409 duplicate slug, 400 FK, explicit 404 existence checks (Supabase `.update()` on a missing row does not error by itself)
+- ✅ `POST/PATCH/DELETE /api/admin/agents[/[id]]`, `/api/admin/locations[/[id]]`
+- ✅ `PATCH /api/admin/inquiries/[id]` (status + notes), `/api/admin/viewing-requests/[id]` (status + notes), `/api/admin/contact-submissions/[id]` (status) — every status validated against the exact CHECK-constraint enum, UUID-validated ids
+- ✅ `POST/PATCH/DELETE /api/admin/blog-posts[/[id]]`, `/api/admin/blog-categories[/[id]]`
+
+#### Added — Infrastructure & components
+- ✅ `lib/auth.ts` — `adminApiGuard()` (now server-only)
+- ✅ `lib/redirects.ts` — `getSafeRedirectPath()` moved here so the module stays client-safe (fixes the client/server split broken by adding server imports to `lib/auth.ts`)
+- ✅ `lib/admin-schemas.ts` — single source of truth for every enum mirroring the DB CHECK constraints + `statusVariant()` badge helper
+- ✅ `lib/supabase/queries.ts` — +20 typed admin queries (dashboard stats, recent activity, paginated property list, single-row fetches, option lists, lead lists, blog lists, users) with explicit row interfaces
+- ✅ `components/admin/` — AdminSidebar (desktop fixed + mobile slide-over, current-section indicator, sign out, back-to-site), AccessDenied, AdminPageHeader, StatusSelect (optimistic + rollback + toast), ToggleCell, DeleteButton, AdminFilterBar, PropertyForm, AgentForm, LocationForm, BlogPostForm, BlogCategoriesManager, InquiriesTable, ViewingRequestsTable, ContactSubmissionsTable
+- ✅ shadcn/ui additions: table, textarea, label, switch, dialog, sonner
+- ✅ `supabase/migrations/018_protect_profile_role.sql` + MIGRATION_ORDER.md updated
+
+#### Modified
+- `app/layout.tsx` — hides public Navbar/Footer on `/admin` routes
+- `lib/supabase/middleware.ts` — sets the `x-current-path` header for the layout
+- `components/auth/LoginForm.tsx`, `SignupForm.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/auth/callback/route.ts` — import `getSafeRedirectPath` from `lib/redirects`
+
+#### Security decisions
+- Admin mutations use the session client + existing admin RLS — service_role deliberately NOT used
+- Inquiries are never deletable (schema/RLS lifecycle via statuses); blog posts and categories support delete because the schema allows it (category delete uses ON DELETE SET NULL)
+- Gallery images managed via URL inputs — the storage buckets exist (migration 017) but no upload endpoint exists yet; documented as missing infrastructure instead of inventing an incompatible upload system
+- `blog_posts.author_id` and every `user_id` come from the session, never from request bodies
+
+#### Verification
+- TypeScript: PASS (0 errors) · ESLint: PASS (0 errors, 0 warnings) · Production build: PASS (51 routes registered incl. 18 `/admin` routes and 13 `/api/admin` route files — 18 mutation handlers, all guarded)
+- Route tests (anonymous, live server): all 10 `/admin/*` pages redirect to `/login?next=/admin`; all `/api/admin/*` mutations return 401 `Authentication required`
+- Live database verified via Supabase CLI: `prevent_role_escalation()` + `protect_profile_role` trigger exist (migration 018 applied); the real owner account (`abdullahog915@gmail.com`) has `profiles.role = 'admin'` with matching `user_id`
+- Regression: `/`, `/properties`, `/agents`, `/locations`, `/blog`, `/contact`, `/compare`, `/login`, `/signup` all 200; `/favorites` redirects to login when signed out (Phase 5 behavior preserved)
+- No service_role usage anywhere in app code (grep-verified)
+
+#### Testing limitations
+- Live database is completely empty (seed never run) — every list exercises its empty-state path; no fake records created per project rules
+- Authenticated non-admin and authenticated admin scenarios are verified by code inspection (layout gate + adminApiGuard) with RLS as the enforced backstop; the signed-in admin dashboard walkthrough is performed manually by the project owner (no test accounts are created)
+
 ### Phase 5 — Favorites (2026-08-15)
 
 #### Architecture

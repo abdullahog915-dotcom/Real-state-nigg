@@ -10,15 +10,17 @@
 
 ## CURRENT PHASE
 
-**PHASE 5 — CONVERSION FEATURES (COMPLETE)**
+**PHASE 6 — ADMIN DASHBOARD (COMPLETE)**
 
-Status: ✅ COMPLETE — Viewing requests, property comparison, auth foundation, and favorites all built and verified; awaiting final commit approval
+Status: ✅ COMPLETE — Full admin dashboard built and verified; awaiting final commit approval
 
 ---
 
 ## CURRENT TASK
 
-Phase 5 Favorites (heart buttons, `/api/favorites`, auth-gated `/favorites` page, login redirect for unauthenticated users) built and verified. Awaiting commit approval — this completes Phase 5 Conversion Features.
+Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) built and verified. Awaiting commit approval.
+
+✅ **Migration `018_protect_profile_role.sql` has been applied to the live database** (2026-08-15 via `supabase db query --linked`; function + trigger verified to exist).
 
 ---
 
@@ -77,6 +79,20 @@ Phase 5 Favorites (heart buttons, `/api/favorites`, auth-gated `/favorites` page
 
 ## IN PROGRESS
 
+### Phase 6 — Admin Dashboard ✅ COMPLETE (2026-08-15)
+- ✅ Admin authentication (three-layer: layout gate + `adminApiGuard()` + RLS admin policies; no service_role)
+- ✅ Dashboard overview (`/admin` — 8 live stat cards + recent activity feeds, all real queries)
+- ✅ Property CRUD (`/admin/properties` — list/filter/paginate, create/edit form, gallery rows, amenities, featured toggle, delete)
+- ✅ Agent CRUD (`/admin/agents`)
+- ✅ Location CRUD (`/admin/locations`)
+- ✅ Lead management (`/admin/inquiries` — status pipeline new/contacted/qualified/negotiation/won/lost, notes; no delete by design)
+- ✅ Viewing management (`/admin/viewing-requests` — requested/confirmed/completed/cancelled)
+- ✅ Contact submissions (`/admin/contact-submissions` — new/read/replied/archived)
+- ✅ Blog CMS (`/admin/blog` + `/admin/categories` — posts with category/status/SEO, category manager)
+- ✅ Users overview (`/admin/users` — read-only profiles; roles managed in DB per migration 018)
+- ⬜ Image upload/management (gallery managed via URL inputs; storage buckets exist but no upload endpoint yet)
+- ⬜ Site settings management (deferred — no schema gaps, can be added as a small follow-up)
+
 ### Phase 5 — Conversion Features ✅ COMPLETE (2026-08-15)
 - ✅ Viewing request system (public form on property detail + `/api/viewing-requests` route)
 - ✅ Property comparison (client-side selection + `/compare` page)
@@ -128,15 +144,8 @@ Phase 5 Favorites (heart buttons, `/api/favorites`, auth-gated `/favorites` page
 - Favorites system
 - Property comparison
 
-### Phase 6 — Admin Dashboard
-- Admin authentication
-- Dashboard overview
-- Property CRUD
-- Image upload/management
-- Agent CRUD
-- Lead management
-- Viewing management
-- Blog CMS
+### Phase 6 — Admin Dashboard (REMAINING)
+- Image upload/management (storage upload endpoint)
 - Site settings management
 
 ### Phase 7 — SEO & Performance
@@ -277,6 +286,39 @@ Phase 5 Favorites (heart buttons, `/api/favorites`, auth-gated `/favorites` page
 - `components/properties/PropertyCard.tsx` — Heart overlay bottom-right (`isFavorited` / `onFavoriteToggle` props)
 - `app/page.tsx`, `app/properties/page.tsx`, `app/properties/[slug]/page.tsx`, `app/locations/[slug]/page.tsx`, `app/agents/[slug]/page.tsx` — Favorite ids fetched in parallel and passed to every card; detail sidebar favorite button
 
+### Phase 6 — Admin Dashboard (2026-08-15)
+- `app/admin/layout.tsx` — Admin shell: server gate (anon → `/login?next=/admin`, non-admin → AccessDenied), sidebar + mobile nav, noindex metadata
+- `app/admin/loading.tsx` — Admin loading skeleton
+- `app/admin/page.tsx` — Dashboard overview (8 live stat cards, registered users, recent inquiries + viewing requests)
+- `app/admin/properties/page.tsx`, `new/page.tsx`, `[id]/edit/page.tsx` — Property list + create/edit
+- `app/admin/agents/page.tsx`, `new/page.tsx`, `[id]/edit/page.tsx` — Agent list + create/edit
+- `app/admin/locations/page.tsx`, `new/page.tsx`, `[id]/edit/page.tsx` — Location list + create/edit
+- `app/admin/inquiries/page.tsx` — Inquiry lead pipeline
+- `app/admin/viewing-requests/page.tsx` — Viewing request pipeline
+- `app/admin/contact-submissions/page.tsx` — Contact submission pipeline
+- `app/admin/blog/page.tsx`, `new/page.tsx`, `[id]/edit/page.tsx` — Blog post list + create/edit
+- `app/admin/categories/page.tsx` — Blog category manager
+- `app/admin/users/page.tsx` — Read-only registered users
+- `app/api/admin/properties/route.ts` + `[id]/route.ts` — Property POST/PATCH/DELETE (gallery + amenities synced, 409/400/404 mapping)
+- `app/api/admin/agents/route.ts` + `[id]/route.ts`
+- `app/api/admin/locations/route.ts` + `[id]/route.ts`
+- `app/api/admin/inquiries/[id]/route.ts` — PATCH status + notes
+- `app/api/admin/viewing-requests/[id]/route.ts` — PATCH status + notes
+- `app/api/admin/contact-submissions/[id]/route.ts` — PATCH status
+- `app/api/admin/blog-posts/route.ts` + `[id]/route.ts`
+- `app/api/admin/blog-categories/route.ts` + `[id]/route.ts`
+- `components/admin/*.tsx` — AdminSidebar, AccessDenied, AdminPageHeader, StatusSelect, ToggleCell, DeleteButton, AdminFilterBar, PropertyForm, AgentForm, LocationForm, BlogPostForm, BlogCategoriesManager, InquiriesTable, ViewingRequestsTable, ContactSubmissionsTable
+- `components/ui/*.tsx` — shadcn additions: table, textarea, label, switch, dialog, sonner
+- `lib/auth.ts` — `adminApiGuard()` (server-only)
+- `lib/redirects.ts` — `getSafeRedirectPath()` moved here to keep it client-safe
+- `lib/admin-schemas.ts` — Zod schemas/enums mirroring DB CHECK constraints + `statusVariant()`
+- `lib/supabase/queries.ts` — +20 typed admin queries with explicit row interfaces
+- `supabase/migrations/018_protect_profile_role.sql` — Role-escalation protection trigger (**applied to the live database 2026-08-15**)
+- `supabase/MIGRATION_ORDER.md` — Migration 018 entry
+- `app/layout.tsx` — Hides public Navbar/Footer on `/admin` routes
+- `lib/supabase/middleware.ts` — Sets `x-current-path` header (always overwritten server-side)
+- `components/auth/LoginForm.tsx`, `SignupForm.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/auth/callback/route.ts` — import `getSafeRedirectPath` from `lib/redirects`
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -323,7 +365,7 @@ Phase 5 Favorites (heart buttons, `/api/favorites`, auth-gated `/favorites` page
 - ✅ site_settings
 - ✅ social_links
 
-**Migrations:** ✅ 17 migration files created
+**Migrations:** ✅ 18 migration files created — all applied, including 018 (profile role protection trigger, applied 2026-08-15)
 **RLS Policies:** ✅ Implemented for all tables
 **Storage Buckets:** ✅ 4 buckets configured (property-images, agent-images, blog-images, site-assets)
 **Seed Data:** ✅ Created (locations, amenities, agents, blog categories, site settings)
@@ -364,12 +406,12 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 5 FAVORITES COMPLETE ✅ — verified, awaiting commit approval**
+**PHASE 6 ADMIN DASHBOARD COMPLETE ✅ — verified, awaiting commit approval**
 
-**Phase 5 — Conversion Features is fully complete** once the favorites commit lands:
+1. ✅ Migration 018 applied to the live database; owner account `abdullahog915@gmail.com` verified as `profiles.role = 'admin'`.
+2. Signed-in admin walkthrough of `/admin` is being performed manually by the project owner.
+3. Optional: seed real properties/agents/locations so the admin dashboard can be exercised with real data.
+4. Remaining Phase 6 scope (future): storage upload endpoint for gallery images, site settings management.
+5. Next major milestone: Phase 7 — SEO & Performance (awaiting direction).
 
-1. Reminder: Supabase Email provider confirmed live; email confirmation architecture is ON (`/auth/callback` built). Dashboard setting can be flipped for local testing without code changes.
-2. Optional: seed real properties/agents/locations so listing cards, compare buttons, favorite buttons, inquiry + viewing forms, and the full favorites flow can be live-tested end-to-end with a real account.
-3. Next major milestone: Phase 6 — Admin Dashboard (awaiting direction).
-
-**Note:** No seed locations, agents, properties, or blog content exist yet. `contact_submissions` and `viewing_requests` tables are empty. Add seed data when ready.
+**Note:** Live database is still completely empty (seed never run); all admin lists exercise their empty states.
