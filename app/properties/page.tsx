@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   getProperties,
   getAllLocations,
+  getFavoritePropertyIds,
   type PropertyListFilters,
 } from '@/lib/supabase/queries';
 import { getTransactionTypeLabel } from '@/lib/utils';
@@ -54,10 +55,11 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
     per_page: 12,
   };
 
-  // Fetch properties and locations in parallel
-  const [result, locations] = await Promise.all([
+  // Fetch properties, locations, and the user's favorites in parallel
+  const [result, locations, favoriteIds] = await Promise.all([
     getProperties(filters),
     getAllLocations(),
+    getFavoritePropertyIds(),
   ]);
 
   const { data: properties, count, totalPages } = result;
@@ -159,6 +161,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                     property={
                       property as unknown as Parameters<typeof PropertyCard>[0]['property']
                     }
+                    isFavorited={favoriteIds.includes(property.id)}
                   />
                 ))}
               </div>

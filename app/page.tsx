@@ -23,6 +23,7 @@ import {
   getFeaturedLocations,
   getActiveAgents,
   getTotalPropertyCount,
+  getFavoritePropertyIds,
 } from '@/lib/supabase/queries';
 import {
   TRANSACTION_TYPES,
@@ -41,11 +42,12 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   // Fetch all data in parallel
-  const [properties, locations, agents, totalProperties] = await Promise.all([
+  const [properties, locations, agents, totalProperties, favoriteIds] = await Promise.all([
     getFeaturedProperties(6),
     getFeaturedLocations(),
     getActiveAgents(6),
     getTotalPropertyCount(),
+    getFavoritePropertyIds(),
   ]);
 
   return (
@@ -150,7 +152,11 @@ export default async function HomePage() {
           {properties.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {properties.map((property) => (
-                <PropertyCard key={property.id} property={property as unknown as Parameters<typeof PropertyCard>[0]['property']} />
+                <PropertyCard
+                  key={property.id}
+                  property={property as unknown as Parameters<typeof PropertyCard>[0]['property']}
+                  isFavorited={favoriteIds.includes(property.id)}
+                />
               ))}
             </div>
           ) : (

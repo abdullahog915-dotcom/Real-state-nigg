@@ -570,6 +570,108 @@ export async function getProperties(filters: PropertyListFilters = {}) {
 }
 
 /**
+ * Columns selected for property card listings (favorites page).
+ * Matches the fields consumed by PropertyCard.
+ */
+const PROPERTY_CARD_COLUMNS = `
+  id,
+  title,
+  slug,
+  description,
+  property_type,
+  transaction_type,
+  status,
+  price,
+  currency,
+  bedrooms,
+  bathrooms,
+  toilets,
+  area,
+  featured_image,
+  is_featured,
+  address,
+  published_at,
+  created_at,
+  locations (
+    id,
+    name,
+    slug,
+    city,
+    state
+  ),
+  agents (
+    id,
+    name,
+    slug,
+    photo_url,
+    phone,
+    whatsapp
+  )
+`;
+
+/**
+ * Get the current user's favorited property IDs, newest favorite first.
+ * Returns an empty array for signed-out visitors.
+ */
+export async function getFavoritePropertyIds(): Promise<string[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('favorites')
+    .select('property_id')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching favorite property ids:', error.message);
+    return [];
+  }
+
+  return data?.map((favorite) => favorite.property_id) ?? [];
+}
+
+/**
+ * Get the current user's favorited properties, newest favorite first.
+ * Only published/featured properties are returned — the inner join plus
+ * status filter drops favorites pointing at unpublished or removed listings.
+ */
+export async function getFavoriteProperties(userId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('favorites')
+    .select(
+      `
+      created_at,
+      properties!inner (
+        ${PROPERTY_CARD_COLUMNS}
+      )
+    `
+    )
+    .eq('user_id', userId)
+    .in('properties.status', ['published', 'featured'])
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching favorite properties:', error.message);
+    return [];
+  }
+
+  // Supabase may return joined single relations as arrays depending on FK inference
+  return (data ?? [])
+    .map((favorite) =>
+      Array.isArray(favorite.properties) ? favorite.properties[0] : favorite.properties
+    )
+    .filter((property): property is NonNullable<typeof property> => property != null);
+}
+
+/**
  * Columns selected for property detail queries.
  * Shared between detail and related property queries.
  */

@@ -43,8 +43,9 @@ import { InquiryForm } from '@/components/forms/InquiryForm';
 import { ViewingRequestForm } from '@/components/forms/ViewingRequestForm';
 import { CompareButton } from '@/components/compare/CompareButton';
 import { CompareBar } from '@/components/compare/CompareBar';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { SectionHeading } from '@/components/shared/SectionHeading';
-import { getPropertyBySlug, getRelatedProperties } from '@/lib/supabase/queries';
+import { getPropertyBySlug, getRelatedProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
 import { CONTACT_INFO } from '@/lib/constants';
 import {
   formatPrice,
@@ -149,11 +150,15 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
     .filter((amenity): amenity is NonNullable<typeof amenity> => amenity != null);
 
   // Related properties (naturally empty when no other properties exist)
-  const relatedProperties = await getRelatedProperties(
-    property.id,
-    { location_id: property.location_id, transaction_type: property.transaction_type },
-    3
-  );
+  // fetched alongside the signed-in user's favorite ids
+  const [relatedProperties, favoriteIds] = await Promise.all([
+    getRelatedProperties(
+      property.id,
+      { location_id: property.location_id, transaction_type: property.transaction_type },
+      3
+    ),
+    getFavoritePropertyIds(),
+  ]);
 
   // WhatsApp CTA — prefer the assigned agent's WhatsApp number
   const whatsappNumber = agent?.whatsapp || agent?.phone || CONTACT_INFO.whatsapp;
@@ -335,6 +340,14 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
           {/* ===================== SIDEBAR ===================== */}
           <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            {/* Add/remove this property from favorites */}
+            <FavoriteButton
+              variant="detail"
+              propertyId={property.id}
+              title={property.title}
+              isFavorited={favoriteIds.includes(property.id)}
+            />
+
             {/* Add/remove this property from comparison */}
             <CompareButton variant="detail" slug={property.slug} title={property.title} />
 
@@ -421,6 +434,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 <PropertyCard
                   key={(related as { id: string }).id}
                   property={related as unknown as Parameters<typeof PropertyCard>[0]['property']}
+                  isFavorited={favoriteIds.includes((related as { id: string }).id)}
                 />
               ))}
             </div>

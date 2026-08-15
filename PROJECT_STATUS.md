@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 5 — CONVERSION FEATURES (VIEWING REQUESTS + PROPERTY COMPARISON + AUTH FOUNDATION COMPLETE)**
+**PHASE 5 — CONVERSION FEATURES (COMPLETE)**
 
-Status: 🟡 IN PROGRESS — Viewing requests, comparison, and auth foundation built and verified; favorites implementation pending (auth prerequisites now in place)
+Status: ✅ COMPLETE — Viewing requests, property comparison, auth foundation, and favorites all built and verified; awaiting final commit approval
 
 ---
 
 ## CURRENT TASK
 
-Phase 5 Auth Foundation (login, signup, email-confirmation callback, sign-out, auth-aware navbar) built and verified. Awaiting commit approval; Favorites implementation comes next (second commit).
+Phase 5 Favorites (heart buttons, `/api/favorites`, auth-gated `/favorites` page, login redirect for unauthenticated users) built and verified. Awaiting commit approval — this completes Phase 5 Conversion Features.
 
 ---
 
@@ -77,11 +77,11 @@ Phase 5 Auth Foundation (login, signup, email-confirmation callback, sign-out, a
 
 ## IN PROGRESS
 
-### Phase 5 — Conversion Features 🟡 IN PROGRESS (2026-08-15)
+### Phase 5 — Conversion Features ✅ COMPLETE (2026-08-15)
 - ✅ Viewing request system (public form on property detail + `/api/viewing-requests` route)
 - ✅ Property comparison (client-side selection + `/compare` page)
 - ✅ Auth foundation (`/login`, `/signup`, `/auth/callback`, sign-out, auth-aware navbar — no migrations, existing `@supabase/ssr` plumbing)
-- ⏳ Favorites system (auth prerequisites now complete; implementation pending)
+- ✅ Favorites system (`/api/favorites` + auth-gated `/favorites` page + heart buttons on every property card/detail — existing `favorites` table + RLS, no migrations)
 - ✅ WhatsApp integration (already shipped in Phase 4)
 - ✅ Inquiry forms (already shipped in Phase 4)
 
@@ -120,9 +120,6 @@ Phase 5 Auth Foundation (login, signup, email-confirmation callback, sign-out, a
 - ✅ Location pages
 - ✅ Contact page
 - ✅ Blog listing and detail pages
-
-### Phase 5 — Conversion Features (REMAINING)
-- Favorites system
 
 ### Phase 5 — Conversion Features
 - WhatsApp integration
@@ -270,6 +267,16 @@ Phase 5 Auth Foundation (login, signup, email-confirmation callback, sign-out, a
 - `components/layout/NavbarClient.tsx` — Navbar interactivity + auth areas (Login/Sign Up vs Favorites/email/Sign Out)
 - `components/layout/Navbar.tsx` — Converted to server wrapper using existing `getUser()`
 
+### Phase 5 — Favorites (2026-08-15)
+- `app/api/favorites/route.ts` — GET/POST/DELETE favorites API (Zod-validated `property_id`, session-derived `user_id`, 401 unauthenticated, published/featured check before insert, `23505` idempotency)
+- `components/favorites/FavoriteButton.tsx` — Heart toggle (card overlay + detail sidebar variants), pending state, login redirect with `next` on 401
+- `components/favorites/FavoritesGrid.tsx` — Client favorites grid (instant removal on un-favorite, live count, EmptyState)
+- `app/favorites/page.tsx` — Auth-gated favorites page (`redirect('/login?next=/favorites')`, newest-first, noindex)
+- `app/favorites/loading.tsx` — Favorites loading skeleton
+- `lib/supabase/queries.ts` — Added `getFavoritePropertyIds()` and `getFavoriteProperties()` (inner join, published/featured visibility) + shared `PROPERTY_CARD_COLUMNS`
+- `components/properties/PropertyCard.tsx` — Heart overlay bottom-right (`isFavorited` / `onFavoriteToggle` props)
+- `app/page.tsx`, `app/properties/page.tsx`, `app/properties/[slug]/page.tsx`, `app/locations/[slug]/page.tsx`, `app/agents/[slug]/page.tsx` — Favorite ids fetched in parallel and passed to every card; detail sidebar favorite button
+
 ### Phase 3 — Supabase Backend
 - `supabase/migrations/*.sql` — 17 database migration files
 - `supabase/seed.sql` — Demo data seed file
@@ -357,12 +364,12 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 5 AUTH FOUNDATION COMPLETE ✅ — verified, awaiting commit approval**
+**PHASE 5 FAVORITES COMPLETE ✅ — verified, awaiting commit approval**
 
-Continue **Phase 5 — Conversion Features**:
+**Phase 5 — Conversion Features is fully complete** once the favorites commit lands:
 
-1. Favorites system (second commit `build phase 5 favorites`) — auth foundation is now in place: `POST/DELETE /api/favorites` (session-derived `user_id`, published-property check, `23505` idempotency), `/favorites` page (auth-gated, redirect to `/login?next=/favorites`), FavoriteButton on PropertyCard + property detail, favorites state plumbing from server pages
-2. Reminder: Supabase Email provider confirmed live; email confirmation architecture is ON (`/auth/callback` built). Dashboard setting can be flipped for local testing without code changes.
-3. Optional: seed real properties/agents/locations so listing cards, compare buttons, favorite buttons, inquiry + viewing forms can be live-tested end-to-end
+1. Reminder: Supabase Email provider confirmed live; email confirmation architecture is ON (`/auth/callback` built). Dashboard setting can be flipped for local testing without code changes.
+2. Optional: seed real properties/agents/locations so listing cards, compare buttons, favorite buttons, inquiry + viewing forms, and the full favorites flow can be live-tested end-to-end with a real account.
+3. Next major milestone: Phase 6 — Admin Dashboard (awaiting direction).
 
 **Note:** No seed locations, agents, properties, or blog content exist yet. `contact_submissions` and `viewing_requests` tables are empty. Add seed data when ready.

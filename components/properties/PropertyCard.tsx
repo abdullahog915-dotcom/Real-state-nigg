@@ -4,6 +4,7 @@ import { Bed, Bath, Maximize, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CompareButton } from '@/components/compare/CompareButton';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { formatPrice, getPropertyTypeLabel, getTransactionTypeLabel } from '@/lib/utils';
 
 interface PropertyCardProps {
@@ -30,9 +31,13 @@ interface PropertyCardProps {
       photo_url: string | null;
     } | null;
   };
+  /** Whether the signed-in user has favorited this property */
+  isFavorited?: boolean;
+  /** Called after a successful favorite toggle with the new state */
+  onFavoriteToggle?: (favorited: boolean) => void;
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, isFavorited, onFavoriteToggle }: PropertyCardProps) {
   const locationLabel = property.locations
     ? `${property.locations.name}, ${property.locations.city}`
     : property.address || 'Nigeria';
@@ -120,6 +125,15 @@ export function PropertyCard({ property }: PropertyCardProps) {
         slug={property.slug}
         title={property.title}
         className="absolute bottom-3 left-3 z-10"
+      />
+
+      {/* Favorite toggle sits above the stretched link */}
+      <FavoriteButton
+        propertyId={property.id}
+        title={property.title}
+        isFavorited={isFavorited}
+        onToggle={onFavoriteToggle}
+        className="absolute bottom-3 right-3 z-10"
       />
     </Card>
   );

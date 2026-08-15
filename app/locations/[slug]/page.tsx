@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { getLocationBySlug, getLocationProperties } from '@/lib/supabase/queries';
+import { getLocationBySlug, getLocationProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
 import { truncate } from '@/lib/utils';
 
 interface LocationDetailPageProps {
@@ -49,7 +49,10 @@ export default async function LocationDetailPage({ params }: LocationDetailPageP
     notFound();
   }
 
-  const properties = await getLocationProperties(location.id);
+  const [properties, favoriteIds] = await Promise.all([
+    getLocationProperties(location.id),
+    getFavoritePropertyIds(),
+  ]);
 
   return (
     <>
@@ -132,6 +135,7 @@ export default async function LocationDetailPage({ params }: LocationDetailPageP
                   property={
                     property as unknown as Parameters<typeof PropertyCard>[0]['property']
                   }
+                  isFavorited={favoriteIds.includes(property.id)}
                 />
               ))}
             </div>

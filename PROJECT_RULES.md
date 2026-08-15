@@ -437,11 +437,11 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - Contact page
 - Blog listing and detail
 
-### Phase 5 — Conversion Features (NEXT)
-- WhatsApp integration
-- Inquiry forms
+### Phase 5 — Conversion Features ✅ COMPLETE
+- WhatsApp integration ✅ (shipped in Phase 4)
+- Inquiry forms ✅ (shipped in Phase 4)
 - Viewing request system ✅ (2026-08-15)
-- Favorites system (auth foundation ready)
+- Favorites system ✅ (2026-08-15 — `/api/favorites`, auth-gated `/favorites` page, heart buttons, login redirect)
 - Property comparison ✅ (2026-08-15)
 - Auth foundation ✅ (2026-08-15 — login/signup/callback/sign-out/navbar)
 
@@ -609,5 +609,5 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 ---
 
 **Last Updated:** 2026-08-15  
-**Current Phase:** Phase 5 — Conversion Features (Viewing Requests + Property Comparison + Auth Foundation complete)
-**Status:** Continue Phase 5 — Favorites system implementation (auth foundation in place: `/login`, `/signup`, `/auth/callback`, sign-out, auth-aware navbar)
+**Current Phase:** Phase 5 — Conversion Features ✅ COMPLETE (Viewing Requests + Property Comparison + Auth Foundation + Favorites)
+**Status:** Favorites built and verified, awaiting commit approval; Phase 6 — Admin Dashboard is next

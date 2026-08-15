@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 5 — Favorites (2026-08-15)
+
+#### Architecture
+- Authenticated favorite storage on the existing `favorites` table (migration 009) and its RLS policy (`Users can manage own favorites`, `user_id = auth.uid()`) — no migrations, no schema/RLS changes, no service_role
+- `user_id` is always derived from the session server-side — never accepted from the client
+- Favorited state resolved server-side (`getFavoritePropertyIds()`) and passed down through pages → `PropertyCard` → `FavoriteButton` — correct first paint, no per-button client fetches
+- Unauthenticated favorite attempts are redirected to `/login?next=<current page>` so users return where they were after signing in
+
+#### Added
+- ✅ `app/api/favorites/route.ts` — GET (favorited property ids), POST (add), DELETE (remove); Zod-validated `property_id`, 401 when unauthenticated, published/featured visibility check before insert, idempotent on the `UNIQUE(user_id, property_id)` constraint (23505 → success) and on removing non-favorited properties
+- ✅ `components/favorites/FavoriteButton.tsx` — heart toggle with `card` (circular overlay, filled rose heart when saved) and `detail` (full-width sidebar button) variants; pending spinner, `aria-pressed`, `preventDefault`/`stopPropagation` against the stretched card link, 401 → login redirect with `next`
+- ✅ `components/favorites/FavoritesGrid.tsx` — client grid for `/favorites`; cards removed instantly on un-favorite, live saved-count, EmptyState when the list empties
+- ✅ `app/favorites/page.tsx` — auth-gated favorites page (`redirect('/login?next=/favorites')` when signed out), newest-favorite-first ordering, noindex metadata
+- ✅ `app/favorites/loading.tsx` — favorites loading skeleton
+- ✅ `lib/supabase/queries.ts` — `getFavoritePropertyIds()` (empty for signed-out visitors) and `getFavoriteProperties(userId)` (inner join + published/featured filter drops favorites pointing at unpublished/removed listings; shared `PROPERTY_CARD_COLUMNS`)
+
+#### Modified
+- `components/properties/PropertyCard.tsx` — optional `isFavorited` / `onFavoriteToggle` props; favorite heart overlaid bottom-right of the card image (mirrors the bottom-left compare toggle)
+- `app/page.tsx`, `app/properties/page.tsx`, `app/properties/[slug]/page.tsx`, `app/locations/[slug]/page.tsx`, `app/agents/[slug]/page.tsx` — fetch favorite ids in parallel and pass `isFavorited` to every card; property detail sidebar gains an "Add to Favorites / Remove from Favorites" button above the compare button
+
+#### Security decisions
+- No `user_id` ever accepted from the client; session-derived only (RLS enforces ownership as a second layer)
+- POST validates the property exists and is published/featured before insert — drafts can never be favorited
+- `/favorites` gating implemented at page level (server `redirect`); no global middleware protection added
+
+#### Verification
+- TypeScript: PASS (0 errors) · ESLint: PASS (0 errors) · Production build: PASS (`/favorites`, `/api/favorites` registered)
+- Routes: `GET /favorites` signed out → redirect to `/login?next=/favorites` (streamed `__next-page-redirect` meta refresh due to the `loading.tsx` Suspense boundary; no favorites data leaked before the redirect)
+- API: `GET`, `POST`, `DELETE` all 401 "Authentication required" when signed out; `POST` with non-UUID `property_id` → 400 with fieldErrors
+- Supabase REST confirmed reachable; current project has no published properties, so empty-state rendering is the exercised path (no fake data per project rules)
+
+#### Testing limitations
+- Signed-in end-to-end toggling could not be exercised without creating test accounts (prohibited); the auth-gate, validation, and redirect paths were verified server-side instead
+- Heart-button interactivity not click-tested in the automated browser (same streamed-Suspense hydration limitation documented for `/compare`); the button reuses the shipped CompareButton overlay pattern exactly
+
 ### Phase 5 — Auth Foundation (2026-08-15)
 
 #### Architecture

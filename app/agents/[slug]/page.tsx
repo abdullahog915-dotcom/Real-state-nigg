@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { getAgentBySlug, getAgentProperties } from '@/lib/supabase/queries';
+import { getAgentBySlug, getAgentProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
 import { generateWhatsAppUrl, truncate } from '@/lib/utils';
 
 interface AgentDetailPageProps {
@@ -56,7 +56,10 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
     notFound();
   }
 
-  const properties = await getAgentProperties(agent.id);
+  const [properties, favoriteIds] = await Promise.all([
+    getAgentProperties(agent.id),
+    getFavoritePropertyIds(),
+  ]);
   const whatsappNumber = agent.whatsapp || agent.phone;
   const whatsappUrl = whatsappNumber
     ? generateWhatsAppUrl(
@@ -159,6 +162,7 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
                     property={
                       property as unknown as Parameters<typeof PropertyCard>[0]['property']
                     }
+                    isFavorited={favoriteIds.includes(property.id)}
                   />
                 ))}
               </div>
