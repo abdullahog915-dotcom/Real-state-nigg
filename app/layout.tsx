@@ -5,6 +5,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SITE_CONFIG } from "@/lib/constants";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -67,9 +68,11 @@ export default async function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col antialiased">
-        {!isAdminRoute && <Navbar />}
-        <main className="flex-1">{children}</main>
-        {!isAdminRoute && <Footer />}
+        <ThemeProvider>
+          {!isAdminRoute && <Navbar />}
+          <main className="flex-1">{children}</main>
+          {!isAdminRoute && <Footer />}
+        </ThemeProvider>
       </body>
     </html>
   );

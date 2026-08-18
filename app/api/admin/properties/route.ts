@@ -4,6 +4,10 @@ import { adminApiGuard } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { slugify } from '@/lib/utils';
 import {
+  getManagedPropertyImagePath,
+  PROPERTY_IMAGE_BUCKET,
+} from '@/lib/property-image-storage';
+import {
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
   TRANSACTION_TYPES,
@@ -186,8 +190,15 @@ export async function POST(request: Request) {
     const { error: imagesError } = await supabase.from('property_images').insert(rows);
     if (imagesError) {
       console.error('Error saving property images:', imagesError.message);
+      await supabase.from('properties').delete().eq('id', property.id);
+      const managedPaths = data.images
+        .map((image) => getManagedPropertyImagePath(image.url))
+        .filter((path): path is string => path !== null);
+      if (managedPaths.length > 0) {
+        await supabase.storage.from(PROPERTY_IMAGE_BUCKET).remove(managedPaths);
+      }
       return NextResponse.json(
-        { error: 'The property was created, but saving gallery images failed' },
+        { error: 'Unable to create the property gallery' },
         { status: 500 }
       );
     }
@@ -202,8 +213,15 @@ export async function POST(request: Request) {
     );
     if (amenitiesError) {
       console.error('Error saving property amenities:', amenitiesError.message);
+      await supabase.from('properties').delete().eq('id', property.id);
+      const managedPaths = data.images
+        .map((image) => getManagedPropertyImagePath(image.url))
+        .filter((path): path is string => path !== null);
+      if (managedPaths.length > 0) {
+        await supabase.storage.from(PROPERTY_IMAGE_BUCKET).remove(managedPaths);
+      }
       return NextResponse.json(
-        { error: 'The property was created, but saving amenities failed' },
+        { error: 'Unable to create the property amenities' },
         { status: 500 }
       );
     }

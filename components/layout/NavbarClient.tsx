@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { CONTACT_INFO } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { SignOutButton } from '@/components/auth/SignOutButton';
+import { ThemeControl } from '@/components/theme/ThemeControl';
 
 interface NavbarClientProps {
   /** Email of the signed-in user, or null when signed out. */
@@ -74,6 +75,7 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
 
           {/* Desktop auth area */}
           <div className="hidden lg:flex lg:items-center lg:gap-3">
+            <ThemeControl compact />
             {userEmail ? (
               <>
                 <Link
@@ -138,6 +140,10 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
 
               {/* Mobile auth area */}
               <div className="pt-4 border-t space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium">Theme</span>
+                  <ThemeControl />
+                </div>
                 {userEmail ? (
                   <>
                     <p className="truncate text-sm text-muted-foreground" title={userEmail}>

@@ -861,6 +861,21 @@ USING (
 );
 ```
 
+### Admin Property Image Upload (Phase 6)
+
+- `POST /api/admin/property-images` accepts authenticated admin multipart uploads and uses the normal session Supabase client, so Storage RLS remains authoritative; no service-role client exists.
+- Both browser and route handler allow JPEG, PNG, and WebP only, with a 10 MB per-file limit. The route also checks binary file signatures before upload.
+- Editing uploads use `property-images/properties/{property-uuid}/{random-uuid}.{ext}`. Pre-creation uploads use `property-images/uploads/{random-session-uuid}/{random-uuid}.{ext}`. Client filenames never become Storage paths.
+- `property_images` remains the gallery metadata source (`url`, `alt_text`, `display_order`, `is_featured`), while `properties.featured_image` stays synchronized for cards and social metadata.
+- Cleanup derives paths only from URLs on the configured Supabase origin that match the strict managed-path format. External/shared URL records remain compatible and are never deleted from Storage.
+
+### Application Theme (Phase 6)
+
+- `next-themes` controls a class-based Light/Dark preference at the root layout and persists it in browser local storage. Light is the default, and a legacy stored `system` value is migrated safely to Light before theme initialization.
+- Tailwind 4 utilities and shadcn primitives share the existing semantic CSS variables through the `@theme` namespace; there is no parallel color system.
+- The Light tokens preserve the original green-and-white interface. Dark uses near-black layered surfaces, restrained gold primary/focus accents, warm off-white text, and neutral borders through the same semantic tokens.
+- Public and admin navigation expose the same keyboard-accessible two-option theme control. The root theme script applies the saved class before hydration to avoid a light-theme flash.
+
 ### Image Optimization Strategy
 
 **Upload Flow:**

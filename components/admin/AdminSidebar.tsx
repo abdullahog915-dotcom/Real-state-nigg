@@ -21,6 +21,7 @@ import {
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ThemeControl } from '@/components/theme/ThemeControl';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -75,6 +76,10 @@ export function AdminSidebar() {
 
   const footer = (
     <div className="space-y-1 border-t px-3 py-4">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-muted-foreground">
+        <span>Theme</span>
+        <ThemeControl compact />
+      </div>
       <Link
         href="/"
         onClick={() => setMobileOpen(false)}
@@ -92,15 +97,18 @@ export function AdminSidebar() {
       {/* Mobile top bar */}
       <div className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background px-4 lg:hidden">
         <span className="text-sm font-semibold">Admin Dashboard</span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setMobileOpen((open) => !open)}
-          aria-label="Toggle navigation"
-          aria-expanded={mobileOpen}
-        >
-          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeControl compact />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label="Toggle navigation"
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile slide-over */}

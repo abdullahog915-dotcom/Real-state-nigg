@@ -10,17 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 6 — ADMIN DASHBOARD (COMPLETE)**
+**PHASE 6 — ADMIN DASHBOARD (ACTIVE VERIFICATION)**
 
-Status: ✅ COMPLETE — Full admin dashboard built and verified; awaiting final commit approval
+Status: 🟡 IN PROGRESS — Dashboard diagnostics, property switches, secure image upload, and Light/Dark theming are implemented; final owner-session write walkthrough remains
 
 ---
 
 ## CURRENT TASK
 
-Targeted Select dropdown and PropertyCard responsive UI fixes are complete and verified; awaiting review and commit approval.
-
-Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) built and verified. Awaiting commit approval.
+Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnished switches, property image upload/management, and application-wide Light/Dark theming. Automated read-only live-database, RLS, production-build, public-page, theme, and responsive checks pass. Final authenticated admin mutations must be exercised in the project owner's existing browser session before Phase 6 is marked complete.
 
 ✅ **Migration `018_protect_profile_role.sql` has been applied to the live database** (2026-08-15 via `supabase db query --linked`; function + trigger verified to exist).
 
@@ -81,7 +79,7 @@ Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) b
 
 ## IN PROGRESS
 
-### Phase 6 — Admin Dashboard ✅ COMPLETE (2026-08-15)
+### Phase 6 — Admin Dashboard 🟡 ACTIVE VERIFICATION (2026-08-18)
 - ✅ Admin authentication (three-layer: layout gate + `adminApiGuard()` + RLS admin policies; no service_role)
 - ✅ Dashboard overview (`/admin` — 8 live stat cards + recent activity feeds, all real queries)
 - ✅ Property CRUD (`/admin/properties` — list/filter/paginate, create/edit form, gallery rows, amenities, featured toggle, delete)
@@ -92,7 +90,9 @@ Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) b
 - ✅ Contact submissions (`/admin/contact-submissions` — new/read/replied/archived)
 - ✅ Blog CMS (`/admin/blog` + `/admin/categories` — posts with category/status/SEO, category manager)
 - ✅ Users overview (`/admin/users` — read-only profiles; roles managed in DB per migration 018)
-- ⬜ Image upload/management (gallery managed via URL inputs; storage buckets exist but no upload endpoint yet)
+- ✅ Image upload/management implemented (authenticated RLS endpoint, JPEG/PNG/WebP validation, 10 MB limit, multiple upload/progress/previews/alt text/cover/order, managed-object cleanup, external URL compatibility)
+- ✅ Light/Dark theme implemented across the public and admin shells with persisted preference, Light fallback for legacy `system` values, original Light visuals, and premium near-black/gold semantic tokens for Dark
+- 🟡 Owner-session verification pending for property boolean persistence and real Storage upload/save/reload
 - ⬜ Site settings management (deferred — no schema gaps, can be added as a small follow-up)
 
 ### Phase 5 — Conversion Features ✅ COMPLETE (2026-08-15)
@@ -367,7 +367,7 @@ Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) b
 - ✅ site_settings
 - ✅ social_links
 
-**Migrations:** ✅ 18 migration files created — all applied, including 018 (profile role protection trigger, applied 2026-08-15)
+**Migrations:** 18 migration files created — live function/trigger from 018 verified, but remote migration history currently records only 001–017
 **RLS Policies:** ✅ Implemented for all tables
 **Storage Buckets:** ✅ 4 buckets configured (property-images, agent-images, blog-images, site-assets)
 **Seed Data:** ✅ Created (locations, amenities, agents, blog categories, site settings)
@@ -376,7 +376,8 @@ Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) b
 
 ## KNOWN ISSUES
 
-None yet — project just started.
+- Final authenticated admin write walkthrough is pending because the project owner's signed-in browser session is not available to command-line automation.
+- Migration 018's function/trigger exist in the live database, but `supabase migration list --linked` does not record 018 in remote migration history; do not reapply it blindly.
 
 ---
 
@@ -408,13 +409,12 @@ None yet — project just started.
 
 ## NEXT ACTION
 
-**PHASE 6 ADMIN DASHBOARD COMPLETE ✅ — verified, awaiting commit approval**
+**PHASE 6 TARGETED DEBUGGING — FINAL OWNER-SESSION VERIFICATION REQUIRED**
 
-1. Review and approve the verified Select dropdown and PropertyCard UI fixes; do not commit until approved.
-2. ✅ Migration 018 applied to the live database; owner account `abdullahog915@gmail.com` verified as `profiles.role = 'admin'`.
-3. Signed-in admin walkthrough of `/admin` is being performed manually by the project owner.
-4. Optional: seed real properties/agents/locations so the admin dashboard can be exercised with real data.
-5. Remaining Phase 6 scope (future): storage upload endpoint for gallery images, site settings management.
-6. Next major milestone: Phase 7 — SEO & Performance (awaiting direction).
+1. In the owner's authenticated local admin session, open `/admin` and confirm the nine live counts render with no labeled PostgREST error.
+2. On an existing property, toggle Featured and Furnished in both directions, save, reload, and confirm persistence.
+3. Upload JPEG/PNG/WebP files, edit alt text/order/cover, save, reload, remove an uploaded image, and confirm the public card/detail gallery.
+4. Exercise Light/Dark in the authenticated admin pages; automated public-page persistence, legacy fallback, and responsive checks already pass.
+5. Run the final quality commands again after the owner walkthrough. Do not commit or start Phase 7 without approval.
 
-**Note:** Live database is still completely empty (seed never run); all admin lists exercise their empty states.
+**Note:** The live database currently contains real data (including one published property with three gallery images, agents, locations, one inquiry, and one registered user); older empty-database notes are obsolete.

@@ -4,6 +4,10 @@ import { adminApiGuard } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { slugify } from '@/lib/utils';
 import {
+  getManagedPropertyImagePath,
+  PROPERTY_IMAGE_BUCKET,
+} from '@/lib/property-image-storage';
+import {
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
   TRANSACTION_TYPES,
@@ -86,7 +90,7 @@ export async function PATCH(
   // Verify the property exists (also proves admin RLS visibility)
   const { data: existing, error: findError } = await supabase
     .from('properties')
-    .select('id')
+    .select('id, property_images (url)')
     .eq('id', id)
     .maybeSingle();
 
@@ -126,6 +130,10 @@ export async function PATCH(
 
   // Gallery replacement
   if (images) {
+    const previousManagedPaths = (existing.property_images ?? [])
+      .map((image) => getManagedPropertyImagePath(image.url))
+      .filter((path): path is string => path !== null);
+
     const { error: deleteError } = await supabase
       .from('property_images')
       .delete()
@@ -171,6 +179,21 @@ export async function PATCH(
         .eq('id', id);
       if (syncError) {
         console.error('Error clearing featured image:', syncError.message);
+      }
+    }
+
+    const retainedManagedPaths = new Set(
+      images
+        .map((image) => getManagedPropertyImagePath(image.url))
+        .filter((path): path is string => path !== null)
+    );
+    const orphanedPaths = previousManagedPaths.filter((path) => !retainedManagedPaths.has(path));
+    if (orphanedPaths.length > 0) {
+      const { error: cleanupError } = await supabase.storage
+        .from(PROPERTY_IMAGE_BUCKET)
+        .remove(orphanedPaths);
+      if (cleanupError) {
+        console.error('Error removing replaced property images:', cleanupError.message);
       }
     }
   }
@@ -219,6 +242,15 @@ export async function DELETE(
 
   const supabase = await createClient();
 
+  const { data: property } = await supabase
+    .from('properties')
+    .select('property_images (url)')
+    .eq('id', id)
+    .maybeSingle();
+  const managedPaths = (property?.property_images ?? [])
+    .map((image) => getManagedPropertyImagePath(image.url))
+    .filter((path): path is string => path !== null);
+
   const { data, error } = await supabase
     .from('properties')
     .delete()
@@ -232,6 +264,15 @@ export async function DELETE(
 
   if (!data || data.length === 0) {
     return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+  }
+
+  if (managedPaths.length > 0) {
+    const { error: cleanupError } = await supabase.storage
+      .from(PROPERTY_IMAGE_BUCKET)
+      .remove(managedPaths);
+    if (cleanupError) {
+      console.error('Error removing deleted property images:', cleanupError.message);
+    }
   }
 
   return NextResponse.json({ success: true });

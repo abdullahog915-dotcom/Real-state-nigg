@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import Image from 'next/image';
+import { useState, useTransition, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,11 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { PROPERTY_STATUSES, PROPERTY_TYPES, TRANSACTION_TYPES } from '@/lib/admin-schemas';
+import {
+  PROPERTY_IMAGE_MAX_BYTES,
+  PROPERTY_IMAGE_MAX_FILES,
+  PROPERTY_IMAGE_MIME_TYPES,
+} from '@/lib/property-image-storage';
 import { getPropertyTypeLabel, getTransactionTypeLabel } from '@/lib/utils';
 
 const NONE = '__none__';
@@ -42,9 +48,12 @@ export interface PropertyFormAmenity {
 }
 
 export interface PropertyFormImage {
+  id?: string;
   url: string;
   alt_text: string;
   is_featured: boolean;
+  storage_path?: string;
+  is_new_upload?: boolean;
 }
 
 export interface PropertyFormValues {
@@ -149,6 +158,8 @@ export function PropertyForm({
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [isPending, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const setField = <K extends keyof PropertyFormValues>(key: K, value: PropertyFormValues[K]) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -161,6 +172,123 @@ export function PropertyForm({
     }));
   };
 
+  const moveImage = (index: number, direction: -1 | 1) => {
+    setValues((current) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current.images.length) return current;
+      const images = [...current.images];
+      [images[index], images[nextIndex]] = [images[nextIndex], images[index]];
+      return { ...current, images };
+    });
+  };
+
+  const removeImage = async (index: number) => {
+    const image = values.images[index];
+    if (image?.is_new_upload && image.storage_path) {
+      const response = await fetch('/api/admin/property-images', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: [image.storage_path] }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        toast.error(body?.error ?? 'Unable to remove the uploaded image');
+        return;
+      }
+    }
+
+    setValues((current) => {
+      const images = current.images.filter((_, imageIndex) => imageIndex !== index);
+      if (image?.is_featured && images.length > 0) images[0] = { ...images[0], is_featured: true };
+      return { ...current, images };
+    });
+  };
+
+  const uploadFiles = (files: File[]) => {
+    const available = PROPERTY_IMAGE_MAX_FILES - values.images.length;
+    if (files.length > available) {
+      toast.error(`You can add up to ${PROPERTY_IMAGE_MAX_FILES} gallery images`);
+      return;
+    }
+
+    for (const file of files) {
+      if (!PROPERTY_IMAGE_MIME_TYPES.includes(file.type as (typeof PROPERTY_IMAGE_MIME_TYPES)[number])) {
+        toast.error(`${file.name}: only JPEG, PNG, and WebP images are allowed`);
+        return;
+      }
+      if (file.size === 0 || file.size > PROPERTY_IMAGE_MAX_BYTES) {
+        toast.error(`${file.name}: images must be no larger than 10 MB`);
+        return;
+      }
+    }
+
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    if (mode === 'edit' && propertyId) formData.append('property_id', propertyId);
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    const request = new XMLHttpRequest();
+    request.open('POST', '/api/admin/property-images');
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onerror = () => {
+      setIsUploading(false);
+      toast.error('The image upload was interrupted');
+    };
+    request.onload = () => {
+      setIsUploading(false);
+      const body = (() => {
+        try {
+          return JSON.parse(request.responseText);
+        } catch {
+          return null;
+        }
+      })();
+      if (request.status < 200 || request.status >= 300) {
+        toast.error(body?.error ?? 'Unable to upload the selected images');
+        return;
+      }
+
+      setValues((current) => {
+        const hasCover = current.images.some((image) => image.is_featured);
+        const uploaded: PropertyFormImage[] = body.images.map(
+          (image: { url: string; storage_path: string; original_name: string }, index: number) => ({
+            url: image.url,
+            storage_path: image.storage_path,
+            alt_text: image.original_name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+            is_featured: !hasCover && index === 0,
+            is_new_upload: true,
+          })
+        );
+        return { ...current, images: [...current.images, ...uploaded] };
+      });
+      setUploadProgress(100);
+      toast.success(`${files.length} ${files.length === 1 ? 'image' : 'images'} uploaded`);
+    };
+    request.send(formData);
+  };
+
+  const handleFileSelection = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (files.length > 0) uploadFiles(files);
+  };
+
+  const cleanupNewUploads = async () => {
+    const paths = values.images
+      .filter((image) => image.is_new_upload && image.storage_path)
+      .map((image) => image.storage_path as string);
+    if (paths.length > 0) {
+      await fetch('/api/admin/property-images', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths }),
+      });
+    }
+  };
+
   const amenitiesByCategory = amenities.reduce<Record<string, PropertyFormAmenity[]>>(
     (groups, amenity) => {
       const key = amenity.category ?? 'general';
@@ -171,6 +299,10 @@ export function PropertyForm({
   );
 
   const handleSubmit = () => {
+    if (isUploading) {
+      toast.error('Wait for the image upload to finish');
+      return;
+    }
     // Client-side sanity checks (the API validates everything again)
     const clientErrors: Record<string, string[]> = {};
 
@@ -238,7 +370,9 @@ export function PropertyForm({
         url: image.url.trim(),
         alt_text: image.alt_text,
         display_order: index,
-        is_featured: image.is_featured,
+        is_featured:
+          image.is_featured ||
+          (index === 0 && !filledImages.some((candidate) => candidate.is_featured)),
       })),
     };
 
@@ -472,22 +606,22 @@ export function PropertyForm({
             {fieldError('agent_id')}
           </div>
 
-          <div className="flex items-center gap-6 sm:col-span-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-6 sm:col-span-2">
+            <div className="relative z-10 flex items-center gap-2">
               <Switch
                 id="is_featured"
                 checked={values.is_featured}
                 onCheckedChange={(checked) => setField('is_featured', checked)}
               />
-              <Label htmlFor="is_featured">Featured listing</Label>
+              <Label htmlFor="is_featured" className="cursor-pointer">Featured listing</Label>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="relative z-10 flex items-center gap-2">
               <Switch
                 id="is_furnished"
                 checked={values.is_furnished}
                 onCheckedChange={(checked) => setField('is_furnished', checked)}
               />
-              <Label htmlFor="is_furnished">Furnished</Label>
+              <Label htmlFor="is_furnished" className="cursor-pointer">Furnished</Label>
             </div>
           </div>
         </CardContent>
@@ -582,68 +716,157 @@ export function PropertyForm({
 
       {/* Gallery images */}
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Gallery Images</CardTitle>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setField('images', [...values.images, { url: '', alt_text: '', is_featured: false }])
-            }
-          >
-            <Plus className="h-4 w-4" /> Add Image
-          </Button>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle className="text-base">Gallery Images</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              JPEG, PNG, or WebP. Maximum 10 MB each and 30 images per property.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setField('images', [
+                  ...values.images,
+                  { url: '', alt_text: '', is_featured: values.images.length === 0 },
+                ])
+              }
+              disabled={isUploading || values.images.length >= PROPERTY_IMAGE_MAX_FILES}
+            >
+              <Plus className="h-4 w-4" /> Add URL
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              asChild
+              className={isUploading || values.images.length >= PROPERTY_IMAGE_MAX_FILES ? 'pointer-events-none opacity-50' : ''}
+            >
+              <label>
+                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                {isUploading ? `Uploading ${uploadProgress}%` : 'Upload Images'}
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept={PROPERTY_IMAGE_MIME_TYPES.join(',')}
+                  multiple
+                  onChange={handleFileSelection}
+                  disabled={isUploading || values.images.length >= PROPERTY_IMAGE_MAX_FILES}
+                />
+              </label>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Paste image URLs (e.g. from a storage bucket or CDN). Mark exactly one image as the
-            cover — it is also used as the listing thumbnail. Direct file upload is not wired up
-            yet (storage bucket exists but no upload endpoint has been built).
+            Upload from your computer or keep using an external image URL. Choose one cover image;
+            it is used on property cards. Use the arrow buttons to set gallery order.
           </p>
+          {isUploading && (
+            <div
+              className="h-2 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-label="Image upload progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={uploadProgress}
+            >
+              <div
+                className="h-full bg-primary transition-[width]"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          )}
           {values.images.length === 0 && (
             <p className="text-sm text-muted-foreground">No images added.</p>
           )}
           {values.images.map((image, index) => (
-            <div key={index} className="grid gap-2 rounded-md border p-3 sm:grid-cols-[1fr_1fr_auto_auto]">
-              <Input
-                value={image.url}
-                onChange={(event) => setImage(index, { url: event.target.value })}
-                placeholder="Image URL"
-                aria-label={`Image ${index + 1} URL`}
-              />
-              <Input
-                value={image.alt_text}
-                onChange={(event) => setImage(index, { alt_text: event.target.value })}
-                placeholder="Alt text (optional)"
-                aria-label={`Image ${index + 1} alt text`}
-              />
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="radio"
-                  name="featured-image"
-                  className="h-4 w-4"
-                  checked={image.is_featured}
-                  onChange={() =>
-                    setField(
-                      'images',
-                      values.images.map((item, i) => ({ ...item, is_featured: i === index }))
-                    )
-                  }
+            <div
+              key={image.id ?? image.storage_path ?? index}
+              className="grid gap-3 rounded-lg border bg-card p-3 md:grid-cols-[8rem_1fr_auto]"
+            >
+              <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-muted">
+                {image.url ? (
+                  <Image
+                    src={image.url}
+                    alt={image.alt_text || `Property image ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="128px"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-muted-foreground">
+                    <ImagePlus className="h-6 w-6" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 space-y-2">
+                <Input
+                  value={image.url}
+                  onChange={(event) => setImage(index, { url: event.target.value })}
+                  placeholder="External image URL"
+                  aria-label={`Image ${index + 1} URL`}
+                  readOnly={Boolean(image.storage_path)}
                 />
-                Cover
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove image ${index + 1}`}
-                onClick={() =>
-                  setField('images', values.images.filter((_, i) => i !== index))
-                }
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+                <Input
+                  value={image.alt_text}
+                  onChange={(event) => setImage(index, { alt_text: event.target.value })}
+                  placeholder="Describe the image for accessibility"
+                  aria-label={`Image ${index + 1} alt text`}
+                />
+                <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="featured-image"
+                    className="h-4 w-4 accent-primary"
+                    checked={image.is_featured}
+                    onChange={() =>
+                      setField(
+                        'images',
+                        values.images.map((item, imageIndex) => ({
+                          ...item,
+                          is_featured: imageIndex === index,
+                        }))
+                      )
+                    }
+                  />
+                  Cover image
+                </label>
+              </div>
+              <div className="flex items-center justify-end gap-1 md:flex-col md:justify-start">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => moveImage(index, -1)}
+                  disabled={index === 0}
+                  aria-label={`Move image ${index + 1} up`}
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => moveImage(index, 1)}
+                  disabled={index === values.images.length - 1}
+                  aria-label={`Move image ${index + 1} down`}
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Remove image ${index + 1}`}
+                  onClick={() => void removeImage(index)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </div>
           ))}
           {fieldError('images')}
@@ -677,11 +900,18 @@ export function PropertyForm({
       </Card>
 
       <div className="flex items-center gap-3">
-        <Button type="button" onClick={handleSubmit} disabled={isPending}>
+        <Button type="button" onClick={handleSubmit} disabled={isPending || isUploading}>
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           {mode === 'create' ? 'Create Property' : 'Save Changes'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push('/admin/properties')}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            void cleanupNewUploads().finally(() => router.push('/admin/properties'));
+          }}
+          disabled={isPending || isUploading}
+        >
           Cancel
         </Button>
       </div>

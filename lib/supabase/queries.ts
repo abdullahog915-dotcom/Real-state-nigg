@@ -1282,13 +1282,33 @@ export async function getAgentProperties(agentId: string, limit = 12) {
 // check before rendering or responding.
 // =====================================================================
 
-/** Count rows with a HEAD request; returns 0 on error (no fake numbers). */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function countRows(query: any): Promise<number> {
+interface AdminCountQuery {
+  label: string;
+  table: string;
+  filters: string;
+  // Supabase query builders are PromiseLike but their generic chain type is
+  // intentionally not exposed as a standalone public type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: PromiseLike<{ count: number | null; error: any }>;
+}
+
+/** Count rows with a labeled HEAD request and never turn query failures into fake zeroes. */
+async function countRows({ label, table, filters, query }: AdminCountQuery): Promise<number> {
   const { count, error } = await query;
   if (error) {
-    console.error('Error counting rows for admin stats:', error.message);
-    return 0;
+    const diagnostic = {
+      stat: label,
+      table,
+      filters,
+      code: error.code ?? null,
+      message: error.message ?? 'Unknown Supabase error',
+      details: error.details ?? null,
+      hint: error.hint ?? null,
+    };
+    console.error('Admin dashboard count failed:', diagnostic);
+    throw new Error(
+      `Unable to load admin dashboard stat "${label}" (${table}; ${filters}): ${diagnostic.code ?? 'unknown'} ${diagnostic.message}`
+    );
   }
   return count ?? 0;
 }
@@ -1312,9 +1332,6 @@ export interface AdminDashboardStats {
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const supabase = await createClient();
 
-  const head = (table: string) =>
-    supabase.from(table).select('*', { count: 'exact', head: true });
-
   const [
     publishedProperties,
     draftProperties,
@@ -1326,15 +1343,72 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     publishedBlogPosts,
     registeredUsers,
   ] = await Promise.all([
-    countRows(head('properties').in('status', ['published', 'featured'])),
-    countRows(head('properties').eq('status', 'draft')),
-    countRows(head('agents').eq('is_active', true)),
-    countRows(head('locations')),
-    countRows(head('inquiries').eq('status', 'new')),
-    countRows(head('viewing_requests').eq('status', 'requested')),
-    countRows(head('contact_submissions').eq('status', 'new')),
-    countRows(head('blog_posts').eq('status', 'published')),
-    countRows(head('profiles')),
+    countRows({
+      label: 'published properties',
+      table: 'properties',
+      filters: 'status IN (published, featured)',
+      query: supabase
+        .from('properties')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['published', 'featured']),
+    }),
+    countRows({
+      label: 'draft properties',
+      table: 'properties',
+      filters: 'status = draft',
+      query: supabase.from('properties').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
+    }),
+    countRows({
+      label: 'active agents',
+      table: 'agents',
+      filters: 'is_active = true',
+      query: supabase.from('agents').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    }),
+    countRows({
+      label: 'locations',
+      table: 'locations',
+      filters: 'none',
+      query: supabase.from('locations').select('id', { count: 'exact', head: true }),
+    }),
+    countRows({
+      label: 'new inquiries',
+      table: 'inquiries',
+      filters: 'status = new',
+      query: supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+    }),
+    countRows({
+      label: 'pending viewing requests',
+      table: 'viewing_requests',
+      filters: 'status = requested',
+      query: supabase
+        .from('viewing_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'requested'),
+    }),
+    countRows({
+      label: 'new contact submissions',
+      table: 'contact_submissions',
+      filters: 'status = new',
+      query: supabase
+        .from('contact_submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'new'),
+    }),
+    countRows({
+      label: 'published blog posts',
+      table: 'blog_posts',
+      filters: 'status = published',
+      query: supabase
+        .from('blog_posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'published'),
+    }),
+    countRows({
+      label: 'registered users',
+      table: 'profiles',
+      filters: 'none',
+      query: supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    }),
   ]);
 
   return {

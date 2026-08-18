@@ -6,6 +6,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { DeleteButton } from '@/components/admin/DeleteButton';
 import { PropertyForm, type PropertyFormValues } from '@/components/admin/PropertyForm';
 import { Button } from '@/components/ui/button';
+import { getManagedPropertyImagePath } from '@/lib/property-image-storage';
 import {
   getAdminAgentOptions,
   getAdminAmenityOptions,
@@ -67,9 +68,11 @@ export default async function EditPropertyPage({ params }: EditPropertyPageProps
     images: [...(property.property_images ?? [])]
       .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
       .map((image) => ({
+        id: image.id,
         url: image.url,
         alt_text: image.alt_text ?? '',
         is_featured: Boolean(image.is_featured),
+        storage_path: getManagedPropertyImagePath(image.url) ?? undefined,
       })),
   };
 

@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 6 targeted debugging and dark theme (2026-08-18)
+
+- Reworked admin dashboard counts to select only `id`, label every table/filter, retain full PostgREST diagnostics (`code`, `message`, `details`, `hint`), and throw instead of silently returning fake zeroes.
+- Verified the live schema and RLS for all nine dashboard statistics. Authenticated-role RLS counts return 1 published property, 0 drafts, 6 active agents, 18 locations, 1 new inquiry, 0 requested viewings, 0 new contacts, 0 published posts, and 1 registered user; anonymous clients remain restricted to public rows.
+- Fixed the shared Radix Switch interaction target with an explicit non-submit button, pointer/touch behavior, visible 44×24 default control, stable thumb transforms, clickable labels, and non-overlaid form placement. `is_featured` and `is_furnished` remain in both POST and PATCH payloads/schemas.
+- Added authenticated `POST/DELETE /api/admin/property-images` using the session Supabase client and existing Storage RLS. Supports multiple JPEG/PNG/WebP files, client/server validation, binary signature checks, 10 MB per-file and 30-image limits, XHR progress, previews, alt text, cover choice, and display-order controls.
+- Managed uploads use `properties/{property-uuid}/{random-uuid}.{ext}` while editing and `uploads/{random-session-uuid}/{random-uuid}.{ext}` before creation. Only strict managed paths on the configured Supabase origin are eligible for cleanup; external/shared URLs are preserved.
+- Property PATCH and DELETE now remove orphaned managed Storage objects after database changes; create failures clean up the property and managed uploads. `featured_image` remains synchronized for PropertyCard, while the public detail gallery now respects `display_order` exactly.
+- Added the existing `next-themes` dependency to the root layout with persistent Light/Dark support, Light as the default, legacy `system` preferences migrated to Light, and no-flash class injection. Added accessible keyboard-operable two-option theme controls to public and admin navigation.
+- Registered the existing shadcn semantic CSS variables with Tailwind 4's `@theme` namespace and added a class-based `dark` variant. Dark now uses a premium near-black/charcoal surface hierarchy, restrained gold primary and focus accents, warm off-white text, neutral borders, elevated inputs, and opaque Select content; the original Light palette remains unchanged.
+- Verification: TypeScript PASS; ESLint PASS; production build PASS; direct anonymous app upload/delete return 401; direct anonymous Storage upload returns RLS 403; explicit Light/Dark persistence PASS; public horizontal-overflow checks PASS at 360/390/430/768/1024/1366/1440/1920; real PropertyCard cover and three-image detail gallery verified.
+- Remaining verification: saving/reloading booleans and uploaded files through the project owner's existing authenticated browser session. Phase 6 remains active until that write walkthrough is complete.
+
 ### Targeted UI fixes (2026-08-18)
 
 - Shared Select now defaults to Radix popper positioning with start alignment, collision padding, trigger-matched width, available-height/width constraints, opaque token-based styling, truncated long labels, and a scrollable viewport.

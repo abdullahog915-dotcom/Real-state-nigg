@@ -132,12 +132,11 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
     : property.locations;
   const agent = Array.isArray(property.agents) ? property.agents[0] : property.agents;
 
-  // Build gallery list: property_images rows ordered by display_order,
-  // featured first. Fall back to featured_image/gallery_images columns.
-  const imageRows = (property.property_images ?? []).slice().sort((a, b) => {
-    if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
-    return a.display_order - b.display_order;
-  });
+  // Gallery order is controlled by display_order. The independently selected
+  // cover remains in properties.featured_image for cards and metadata.
+  const imageRows = (property.property_images ?? [])
+    .slice()
+    .sort((a, b) => a.display_order - b.display_order);
   const galleryImages = imageRows.map((img) => ({
     id: img.id,
     url: img.url,
