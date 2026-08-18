@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Targeted UI fixes (2026-08-18)
+
+- Shared Select now defaults to Radix popper positioning with start alignment, collision padding, trigger-matched width, available-height/width constraints, opaque token-based styling, truncated long labels, and a scrollable viewport.
+- PropertyCard now keeps equal-height grid cards, a consistent clipped 4:3 image region, non-overlapping image actions, constrained badges/text, and a compact overflow-safe feature row.
+- Verified the five PropertyForm selects and PropertyCard at 360, 390, 430, 768, 1024, 1366, 1440, and 1920px; TypeScript, ESLint, and the production build pass.
+
 ### Phase 6 — Admin Dashboard (2026-08-15)
 
 #### Architecture
@@ -66,6 +72,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 #### Testing limitations
 - Live database is completely empty (seed never run) — every list exercises its empty-state path; no fake records created per project rules
 - Authenticated non-admin and authenticated admin scenarios are verified by code inspection (layout gate + adminApiGuard) with RLS as the enforced backstop; the signed-in admin dashboard walkthrough is performed manually by the project owner (no test accounts are created)
+
+#### Fix — Login session handoff (2026-08-15)
+- `lib/supabase/client.ts` was creating the browser Supabase client with `@supabase/supabase-js` `createClient`, which stores auth sessions in `localStorage`. The server-side client and middleware use `@supabase/ssr` `createServerClient`, which reads sessions from HTTP cookies. After `signInWithPassword`, the session existed only in `localStorage` — no cookie was set — so the middleware's `getUser()` returned `null` and `/admin` redirected back to `/login`. Fixed by switching to `createBrowserClient` from `@supabase/ssr`, which persists sessions in cookies that the middleware reads on the next request.
+- Testing note: `next start` is incompatible with `output: 'standalone'` (causes `ChunkLoadError` — client JS never loads). Use `next dev` for local testing or `node .next/standalone/server.js` for production-like testing.
 
 ### Phase 5 — Favorites (2026-08-15)
 

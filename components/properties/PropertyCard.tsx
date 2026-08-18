@@ -43,7 +43,7 @@ export function PropertyCard({ property, isFavorited, onFavoriteToggle }: Proper
     : property.address || 'Nigeria';
 
   return (
-    <Card className="group relative gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
+    <Card className="group relative h-full min-w-0 gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {property.featured_image ? (
@@ -51,8 +51,8 @@ export function PropertyCard({ property, isFavorited, onFavoriteToggle }: Proper
             src={property.featured_image}
             alt={property.title}
             fill
-            className="object-cover transition-transform group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
             unoptimized
           />
         ) : (
@@ -62,52 +62,73 @@ export function PropertyCard({ property, isFavorited, onFavoriteToggle }: Proper
         )}
 
         {/* Transaction type badge */}
-        <Badge className="absolute top-3 left-3">
+        <Badge className="absolute top-3 left-3 max-w-[calc(50%-1rem)] truncate">
           {getTransactionTypeLabel(property.transaction_type)}
         </Badge>
 
         {/* Property type badge */}
-        <Badge variant="secondary" className="absolute top-3 right-3">
+        <Badge
+          variant="secondary"
+          className="absolute top-3 right-3 max-w-[calc(50%-1rem)] truncate"
+        >
           {getPropertyTypeLabel(property.property_type)}
         </Badge>
+
+        {/* Card actions sit above the stretched link without covering property details. */}
+        <CompareButton
+          slug={property.slug}
+          title={property.title}
+          className="absolute bottom-3 left-3 z-10"
+        />
+        <FavoriteButton
+          propertyId={property.id}
+          title={property.title}
+          isFavorited={isFavorited}
+          onToggle={onFavoriteToggle}
+          className="absolute right-3 bottom-3 z-10"
+        />
       </div>
 
       {/* Content */}
-      <CardContent className="pt-4 pb-5">
+      <CardContent className="flex min-w-0 flex-1 flex-col px-4 pt-4 pb-5 sm:px-5">
         {/* Price */}
-        <p className="text-xl font-bold text-primary mb-1">
+        <p className="mb-1 truncate text-xl font-bold text-primary">
           {formatPrice(property.price, property.transaction_type as 'sale' | 'rent' | 'short-let')}
         </p>
 
         {/* Title */}
-        <h3 className="font-semibold text-foreground line-clamp-1 mb-2">
+        <h3 className="mb-2 line-clamp-1 font-semibold text-foreground">
           {property.title}
         </h3>
 
         {/* Location */}
-        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
+        <div className="mb-3 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
-          <span className="line-clamp-1">{locationLabel}</span>
+          <span className="min-w-0 truncate">{locationLabel}</span>
         </div>
 
         {/* Features */}
-        <div className="flex items-center gap-4 border-t pt-3 text-sm text-muted-foreground">
+        <div className="mt-auto grid min-h-7 min-w-0 grid-cols-3 gap-2 border-t pt-3 text-xs text-muted-foreground sm:text-sm">
           {property.bedrooms != null && (
-            <div className="flex items-center gap-1.5">
-              <Bed className="h-4 w-4" />
-              <span>{property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}</span>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Bed className="h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}
+              </span>
             </div>
           )}
           {property.bathrooms != null && (
-            <div className="flex items-center gap-1.5">
-              <Bath className="h-4 w-4" />
-              <span>{property.bathrooms} {property.bathrooms === 1 ? 'Bath' : 'Baths'}</span>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Bath className="h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {property.bathrooms} {property.bathrooms === 1 ? 'Bath' : 'Baths'}
+              </span>
             </div>
           )}
           {property.area != null && (
-            <div className="flex items-center gap-1.5">
-              <Maximize className="h-4 w-4" />
-              <span>{property.area} sqm</span>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Maximize className="h-4 w-4 shrink-0" />
+              <span className="truncate">{property.area} sqm</span>
             </div>
           )}
         </div>
@@ -118,22 +139,6 @@ export function PropertyCard({ property, isFavorited, onFavoriteToggle }: Proper
         href={`/properties/${property.slug}`}
         className="absolute inset-0 z-[1]"
         aria-label={`View details for ${property.title}`}
-      />
-
-      {/* Compare toggle sits above the stretched link */}
-      <CompareButton
-        slug={property.slug}
-        title={property.title}
-        className="absolute bottom-3 left-3 z-10"
-      />
-
-      {/* Favorite toggle sits above the stretched link */}
-      <FavoriteButton
-        propertyId={property.id}
-        title={property.title}
-        isFavorited={isFavorited}
-        onToggle={onFavoriteToggle}
-        className="absolute bottom-3 right-3 z-10"
       />
     </Card>
   );

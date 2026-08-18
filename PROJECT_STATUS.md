@@ -4,7 +4,7 @@
 **Type:** Premium Commercial Real Estate Platform  
 **Target Market:** Nigerian Real Estate Agencies  
 **Price Point:** $500–$1,000  
-**Last Updated:** 2026-08-15
+**Last Updated:** 2026-08-18
 
 ---
 
@@ -17,6 +17,8 @@ Status: ✅ COMPLETE — Full admin dashboard built and verified; awaiting final
 ---
 
 ## CURRENT TASK
+
+Targeted Select dropdown and PropertyCard responsive UI fixes are complete and verified; awaiting review and commit approval.
 
 Phase 6 Admin Dashboard (10 admin pages + 15 admin API routes + migration 018) built and verified. Awaiting commit approval.
 
@@ -408,10 +410,11 @@ None yet — project just started.
 
 **PHASE 6 ADMIN DASHBOARD COMPLETE ✅ — verified, awaiting commit approval**
 
-1. ✅ Migration 018 applied to the live database; owner account `abdullahog915@gmail.com` verified as `profiles.role = 'admin'`.
-2. Signed-in admin walkthrough of `/admin` is being performed manually by the project owner.
-3. Optional: seed real properties/agents/locations so the admin dashboard can be exercised with real data.
-4. Remaining Phase 6 scope (future): storage upload endpoint for gallery images, site settings management.
-5. Next major milestone: Phase 7 — SEO & Performance (awaiting direction).
+1. Review and approve the verified Select dropdown and PropertyCard UI fixes; do not commit until approved.
+2. ✅ Migration 018 applied to the live database; owner account `abdullahog915@gmail.com` verified as `profiles.role = 'admin'`.
+3. Signed-in admin walkthrough of `/admin` is being performed manually by the project owner.
+4. Optional: seed real properties/agents/locations so the admin dashboard can be exercised with real data.
+5. Remaining Phase 6 scope (future): storage upload endpoint for gallery images, site settings management.
+6. Next major milestone: Phase 7 — SEO & Performance (awaiting direction).
 
 **Note:** Live database is still completely empty (seed never run); all admin lists exercise their empty states.
