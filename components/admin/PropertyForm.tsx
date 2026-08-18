@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PROPERTY_STATUSES, PROPERTY_TYPES, TRANSACTION_TYPES } from '@/lib/admin-schemas';
 import {
   PROPERTY_IMAGE_MAX_BYTES,
+  PROPERTY_IMAGE_MAX_BATCH_BYTES,
   PROPERTY_IMAGE_MAX_FILES,
   PROPERTY_IMAGE_MIME_TYPES,
 } from '@/lib/property-image-storage';
@@ -188,7 +189,10 @@ export function PropertyForm({
       const response = await fetch('/api/admin/property-images', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths: [image.storage_path] }),
+        body: JSON.stringify({
+          paths: [image.storage_path],
+          property_id: mode === 'edit' ? propertyId : null,
+        }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -208,6 +212,10 @@ export function PropertyForm({
     const available = PROPERTY_IMAGE_MAX_FILES - values.images.length;
     if (files.length > available) {
       toast.error(`You can add up to ${PROPERTY_IMAGE_MAX_FILES} gallery images`);
+      return;
+    }
+    if (files.reduce((total, file) => total + file.size, 0) > PROPERTY_IMAGE_MAX_BATCH_BYTES) {
+      toast.error('Upload batches must be no larger than 50 MB');
       return;
     }
 
@@ -284,7 +292,7 @@ export function PropertyForm({
       await fetch('/api/admin/property-images', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths }),
+        body: JSON.stringify({ paths, property_id: mode === 'edit' ? propertyId : null }),
       });
     }
   };

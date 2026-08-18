@@ -8,6 +8,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 8 — Security Review (2026-08-19)
+
+#### Findings and fixes
+- Added and applied `019_security_hardening.sql` to replace broad `WITH CHECK (true)` lead policies with initial-state, published-property, and length checks; agents are limited to assigned inquiries/viewings and cannot rewrite customer/assignment fields. The migration also fixes mutable `search_path` use in all `SECURITY DEFINER` functions and restricts direct function execution.
+- Added per-bucket Storage MIME and size restrictions. Property uploads also enforce 10 MB/file, 50 MB/batch, server-generated UUID paths, structural JPEG/PNG/WebP validation, and an early request-size check.
+- Bound temporary upload paths to the authenticated uploader. Direct cleanup now rejects attached objects and property-ID mismatches; property replacement/deletion preserves any object still referenced by another record.
+- Public inquiry/viewing APIs now verify that the target property is published or featured. Public request fields remain allowlisted and internal status/assignment/notes are server-derived.
+- Removed email/account-state distinctions from login/signup responses to reduce account enumeration.
+- Added request-boundary Origin/Fetch Metadata checks for browser API mutations. Cross-site requests receive 403; same-origin and non-browser clients remain compatible. No permissive CORS headers were added.
+- Added a request-boundary `/favorites` gate so anonymous requests receive a real 307 before any private page shell can stream; the page-level session redirect remains defense in depth.
+- Added compatible baseline headers: partial CSP (`base-uri`, `object-src`, `frame-ancestors`), `X-Frame-Options: DENY`, MIME sniffing protection, strict-origin referrer policy, and a restrictive permissions policy. HSTS remains production-only.
+- Restricted admin-provided public media URLs to HTTP(S), bounded blog content, and sanitized/bounded values interpolated into raw PostgREST `.or()` filters.
+- Removed the unused service-role variable from `.env.example` and setup/architecture guidance. Admin code continues to use only the verified session plus RLS.
+
+#### Verification
+- Migration 019 applied successfully; `supabase migration list --linked` shows 001–019 aligned and `supabase db push --linked --dry-run` reports the remote database is up to date.
+- Remote PostgreSQL catalogs confirmed all five hardened replacement policies, all six expected hardened/new functions, the auth/profile/inquiry/viewing protection triggers, RLS enabled on all 15 public tables, and the exact four Storage MIME/file-size configurations.
+- Post-migration owner testing passed for the public website, published property/blog, public forms/features, authenticated admin panel, and anonymous admin protection, with no observed regression.
+- Live anonymous RLS reads: published property allowed; draft properties, profiles, favorites, inquiries, viewing requests, contact submissions, and draft blog posts returned zero rows. Random-ID anonymous UPDATE/DELETE returned zero rows and changed nothing.
+- Live HTTP matrix: all 10 `/admin*` pages redirected to login before rendering; all 20 `/api/admin/*` mutations returned 401; cross-site mutation returned 403; same-origin invalid input returned 400; encoded open-redirect variants stayed internal.
+- Upload utility tests accepted structurally valid JPEG/PNG/WebP inputs and rejected zero-byte, signature-only, MIME-mismatched, traversal, slash-filename, and external-managed-URL cases.
+- Final quality checks passed: `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `git diff --check`.
+- Tracked source/recent history scan found no credential-shaped secrets or tracked environment files. `npm audit --omit=dev` reported zero vulnerabilities. An unused service-role credential exists only in ignored `.env.local`; its value was not printed or changed.
+
+#### Deferred/manual
+- No customer profile or auth-linked agent currently exists for non-destructive live-session testing; their ownership/assignment rules were verified from the active remote RLS catalog and protection triggers, and can be smoke-tested when those identities are introduced.
+- Configure Supabase Auth rate limits/Turnstile and Cloudflare distributed limits for public/application mutations in Phase 9; in-process limiting was deliberately avoided because it is not reliable across Workers.
+- Remove the unused service-role credential from local/deployment environments and rotate it if it has ever been shared. No secrets were rotated automatically.
+
 ### Phase 7 — SEO & Performance (2026-08-19)
 
 #### SEO and public routes

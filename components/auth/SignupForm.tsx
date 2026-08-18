@@ -37,7 +37,6 @@ export function SignupForm({ next }: SignupFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState('');
 
   const safeNext = getSafeRedirectPath(next);
 
@@ -69,21 +68,15 @@ export function SignupForm({ next }: SignupFormProps) {
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
-        if (message.includes('already registered') || message.includes('already exists')) {
-          setServerError('An account with this email already exists. Try signing in.');
-        } else if (message.includes('password')) {
-          setServerError('That password is too weak. Please choose a stronger one.');
-        } else {
-          setServerError('Unable to create your account right now. Please try again.');
-        }
+        setServerError('Unable to create your account right now. Please try again.');
         return;
       }
 
-      // Supabase returns a user without identities when the email is already
-      // registered — treat it the same as a duplicate account.
+      // With confirmation enabled, Supabase can return an obfuscated user
+      // without identities for an existing address. Show the same generic
+      // success state as a new signup to prevent account enumeration.
       if (data.user && data.user.identities && data.user.identities.length === 0) {
-        setServerError('An account with this email already exists. Try signing in.');
+        setConfirmationSent(true);
         return;
       }
 
@@ -95,7 +88,6 @@ export function SignupForm({ next }: SignupFormProps) {
       }
 
       // No session — the user must confirm their email first.
-      setSubmittedEmail(values.email);
       setConfirmationSent(true);
     } catch {
       setServerError('Something went wrong. Please try again.');
@@ -108,9 +100,8 @@ export function SignupForm({ next }: SignupFormProps) {
         <CheckCircle2 className="h-10 w-10 text-green-600" />
         <h3 className="text-lg font-semibold">Check Your Email</h3>
         <p className="text-sm text-muted-foreground">
-          We&apos;ve sent a confirmation link to{' '}
-          <span className="font-medium text-foreground">{submittedEmail}</span>. Click the
-          link in the email to activate your account, then sign in.
+          If this address is eligible, a confirmation link will arrive shortly. Follow the
+          link to activate your account, then sign in.
         </p>
       </div>
     );

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { adminApiGuard } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { slugify } from '@/lib/utils';
+import { httpUrlSchema } from '@/lib/admin-schemas';
 
 /** Partial update schema for agents (migration 004). */
 const updateAgentSchema = z.object({
@@ -12,7 +13,7 @@ const updateAgentSchema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal('')),
   whatsapp: z.string().trim().max(30).optional().or(z.literal('')),
   bio: z.string().trim().max(5000).optional().or(z.literal('')),
-  photo_url: z.string().trim().url().max(2048).optional().or(z.literal('')),
+  photo_url: httpUrlSchema.optional().or(z.literal('')),
   specialization: z.array(z.string().trim().min(1).max(100)).max(20).optional(),
   locations: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
   is_active: z.boolean().optional(),

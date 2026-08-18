@@ -10,17 +10,18 @@
 
 ## CURRENT PHASE
 
-**PHASE 7 — SEO & PERFORMANCE (VERIFIED)**
+**PHASE 8 — SECURITY REVIEW ✅ COMPLETE**
 
-Status: ✅ COMPLETE — Public metadata, structured data, crawl controls, canonical strategy, query optimization, caching decisions, responsive behavior, and production rendering verified
+Status: ✅ COMPLETE — Code/config hardening is complete, migration 019 is active, migrations 001–019 are aligned locally/remotely, and post-migration application verification passed
 
 ---
 
 ## CURRENT TASK
 
-Phase 7 is implemented and verified. Public routes now have intentional metadata and indexing rules, dynamic detail pages use live Supabase content, JSON-LD is safely serialized, the sitemap uses public RLS-backed data, and robots exclusions cover private/internal areas. Query payloads and duplicate request reads were reduced without introducing public caching of session-aware pages.
+Phase 8 audited authentication, admin authorization, every RLS policy, Storage, all API routes, object access, uploads, input/query safety, CSRF/CORS/redirects, rate limiting, secrets/history, headers, error leakage, and SEO exposure. Demonstrated issues were fixed in application code and migration 019. Migration 019 was applied successfully and its remote policies, functions, triggers, and bucket restrictions were verified directly. No deployment, commit, or push was performed.
 
 ✅ **Migration `018_protect_profile_role.sql` has been applied to the live database** (2026-08-15 via `supabase db query --linked`; function + trigger verified to exist).
+✅ **Migration `019_security_hardening.sql` has been applied to the live database** (2026-08-19; migrations 001–019 aligned and `db push --dry-run` reports the remote database is up to date).
 
 ---
 
@@ -79,7 +80,22 @@ Phase 7 is implemented and verified. Public routes now have intentional metadata
 
 ## RECENTLY COMPLETED
 
-No phase is currently in progress. Phase 8 has not been started.
+### Phase 8 — Security Review ✅ COMPLETE (2026-08-19)
+- ✅ Anonymous live checks: public published data allowed; drafts, profiles, favorites, inquiries, viewings, contacts, and draft blog rows hidden; anonymous writes returned no rows
+- ✅ All 10 admin pages redirect anonymous requests before rendering; all 20 admin mutations return 401 before parsing IDs/bodies
+- ✅ Anonymous `/favorites` now redirects at the request boundary; its API returns 401 and RLS exposes no rows
+- ✅ Migration 019 narrows public lead inserts, limits agents to assigned leads, protects customer fields, hardens `SECURITY DEFINER` search paths, and sets Storage MIME/size limits
+- ✅ Role escalation remains protected by migration 018; application roles are always session-derived
+- ✅ Property uploads now have structural JPEG/PNG/WebP checks, 10 MB/file and 50 MB/batch limits, uploader-scoped temporary paths, attached-image delete refusal, and shared-reference-safe cleanup
+- ✅ Account-enumeration differences removed from login/signup responses
+- ✅ Cross-site API mutations rejected; no permissive CORS headers; redirect attack variants rejected
+- ✅ Baseline CSP/clickjacking/MIME/referrer/permissions headers added; HSTS deferred to production
+- ✅ Raw PostgREST `.or()` search values sanitized and bounded; public APIs now verify inquiry/viewing targets are published
+- ✅ Tracked source and recent history contain no credential-shaped secrets; production dependency audit reports zero vulnerabilities
+- ✅ Migration 019 applied successfully; migrations 001–019 are aligned locally/remotely and all hardened policies, functions, triggers, RLS flags, and bucket restrictions were verified in the remote catalogs
+- ✅ Post-migration owner testing passed for the public site, published property/blog, public forms/features, authenticated admin panel, and anonymous admin denial; no regression was observed
+- ✅ Final anonymous HTTP/RLS matrix passed, including all 10 admin pages, all 20 admin mutations, favorites privacy, CSRF/origin rejection, redirect safety, headers, crawl controls, and generic errors
+- ⚠️ Distributed abuse controls remain Phase 9 work: Supabase Auth rate limits/Turnstile plus Cloudflare rules for application endpoints.
 
 ### Phase 7 — SEO & Performance ✅ COMPLETE (2026-08-19)
 - ✅ Unique metadata, canonical URLs, Open Graph, and Twitter metadata across public routes
@@ -161,16 +177,14 @@ No phase is currently in progress. Phase 8 has not been started.
 - Property comparison
 
 ### Phase 6 — Admin Dashboard (REMAINING)
-- Image upload/management (storage upload endpoint)
 - Site settings management
 
-### Phase 8 — Security Review
-- RLS verification
-- Authorization testing
-- File upload security
-- Environment variables audit
-- Admin route protection
-- Rate limiting
+### Phase 8 — Security Review ✅ COMPLETE
+- Migration 019 applied and migrations 001–019 aligned locally/remotely
+- Remote hardened RLS policies, functions, triggers, RLS enablement, and Storage restrictions verified
+- Post-migration public and authenticated-admin application testing passed
+- A future customer/linked-agent session can extend the matrix when those identities exist; live policies and protection triggers are already verified
+- Remove the unused service-role credential from ignored local/deployment environments and rotate it if it has been shared
 
 ### Phase 9 — Cloudflare Production
 - Cloudflare deployment
@@ -372,7 +386,7 @@ No phase is currently in progress. Phase 8 has not been started.
 - ✅ site_settings
 - ✅ social_links
 
-**Migrations:** 18 migration files created — live function/trigger from 018 verified, but remote migration history currently records only 001–017
+**Migrations:** 19 migration files created — migrations 001–019 are aligned locally/remotely; hardened functions, triggers, policies, and Storage limits verified live
 **RLS Policies:** ✅ Implemented for all tables
 **Storage Buckets:** ✅ 4 buckets configured (property-images, agent-images, blog-images, site-assets)
 **Seed Data:** ✅ Created (locations, amenities, agents, blog categories, site settings)
@@ -381,10 +395,9 @@ No phase is currently in progress. Phase 8 has not been started.
 
 ## KNOWN ISSUES
 
-- Migration 018's function/trigger exist in the live database, but `supabase migration list --linked` does not record 018 in remote migration history; do not reapply it blindly.
 - `NEXT_PUBLIC_SITE_URL` and the final brand/contact values must be set for production so canonical, sitemap, robots, and structured-data URLs use the real domain and business identity.
 - Supabase-hosted public images remain unoptimized by Next.js by design for the current Cloudflare target. Configure/verify Cloudflare image delivery and cache behavior during Phase 9 rather than introducing Vercel image infrastructure.
-- No published blog post currently exists, so Article metadata/schema was build-verified and source-reviewed but could not be exercised against a live public post.
+- No customer profile or auth-linked agent currently exists for a non-destructive live-session matrix; customer ownership and assigned-agent behavior were verified from the active RLS policies/functions/triggers and should be smoke-tested when those identities are introduced.
 
 ---
 
@@ -416,10 +429,11 @@ No phase is currently in progress. Phase 8 has not been started.
 
 ## NEXT ACTION
 
-**PHASE 7 COMPLETE — REVIEW BEFORE COMMIT**
+**PHASE 8 COMPLETE — READY FOR OWNER REVIEW AND COMMIT**
 
-1. Review the Phase 7 report and indexing/canonical decisions.
-2. Set the final `NEXT_PUBLIC_SITE_URL`, site name, and contact values before production.
-3. Do not start Phase 8 or Phase 9 until Phase 7 changes are approved and committed.
+1. Review the complete uncommitted Phase 8 diff and commit only after owner approval.
+2. Remove the unused service-role credential from ignored local/deployment environments; rotate it if it has ever been copied or shared. The app does not require it.
+3. Begin Phase 9 separately when authorized: Cloudflare deployment, distributed rate limiting/Turnstile, production domain values, TLS/HSTS, and production smoke testing.
+4. Do not deploy or start Phase 9 automatically.
 
-**Note:** The live database currently contains real data (including one published property with three gallery images, agents, locations, one inquiry, and one registered user); older empty-database notes are obsolete.
+**Note:** The live database currently contains real data (including one published property with four property-image rows/objects, agents, locations, two inquiries, one published blog post, and one registered admin user); older empty-database notes are obsolete.

@@ -30,7 +30,6 @@ Complete guide for setting up Supabase backend for the Nigerian Real Estate Plat
 2. Copy the following:
    - **Project URL** (e.g., `https://xxxxx.supabase.co`)
    - **anon/public key** (safe to use in client-side code)
-   - **service_role key** (NEVER expose to client, server-only)
 
 ### Step 3: Update Environment Variables
 
@@ -39,7 +38,6 @@ Update `.env.local` file:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
 **⚠️ IMPORTANT:** Never commit `.env.local` to Git. It's already in `.gitignore`.
@@ -423,7 +421,7 @@ supabase db dump -f backup.sql
 
 ## 15. SECURITY BEST PRACTICES
 
-1. **Never expose service_role key to client**
+1. **Do not configure a service_role key for the application** — admin operations use the authenticated session plus RLS
 2. **Always use RLS policies** (never rely on client-side checks)
 3. **Validate all user inputs** (use Zod schemas)
 4. **Limit file upload sizes** in storage buckets

@@ -11,6 +11,7 @@ import {
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
   TRANSACTION_TYPES,
+  httpUrlSchema,
   propertyImageSchema,
 } from '@/lib/admin-schemas';
 
@@ -59,13 +60,7 @@ const createPropertySchema = z.object({
   floors: z.number().int().min(0).max(500).nullable().optional(),
   is_furnished: z.boolean().default(false),
   agent_id: z.string().uuid().nullable().optional(),
-  video_url: z
-    .string()
-    .trim()
-    .url('Enter a valid video URL')
-    .max(2048)
-    .optional()
-    .or(z.literal('')),
+  video_url: httpUrlSchema.optional().or(z.literal('')),
   meta_title: z
     .string()
     .trim()

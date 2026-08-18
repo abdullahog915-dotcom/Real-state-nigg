@@ -40,6 +40,23 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
+  const { data: property, error: propertyError } = await supabase
+    .from('properties')
+    .select('id')
+    .eq('id', parsed.data.property_id)
+    .in('status', ['published', 'featured'])
+    .maybeSingle();
+  if (propertyError) {
+    console.error('Error validating inquiry property:', propertyError.message);
+    return NextResponse.json(
+      { error: 'Unable to submit your inquiry right now. Please try again.' },
+      { status: 500 }
+    );
+  }
+  if (!property) {
+    return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+  }
+
   const { error } = await supabase.from('inquiries').insert({
     property_id: parsed.data.property_id,
     name: parsed.data.name,

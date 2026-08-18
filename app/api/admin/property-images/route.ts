@@ -5,17 +5,19 @@ import {
   hasValidPropertyImageSignature,
   isManagedPropertyImagePath,
   PROPERTY_IMAGE_BUCKET,
+  PROPERTY_IMAGE_MAX_BATCH_BYTES,
   PROPERTY_IMAGE_MAX_BYTES,
   PROPERTY_IMAGE_MAX_FILES,
   PROPERTY_IMAGE_MIME_TYPES,
   propertyImageExtension,
   type PropertyImageMimeType,
 } from '@/lib/property-image-storage';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getUser } from '@/lib/supabase/server';
 
 const uuidSchema = z.string().uuid();
 const deleteSchema = z.object({
   paths: z.array(z.string().max(300)).min(1).max(PROPERTY_IMAGE_MAX_FILES),
+  property_id: uuidSchema.nullable().optional(),
 });
 
 function uploadError(error: string, status = 400) {
@@ -35,6 +37,9 @@ export async function POST(request: Request) {
   if (files.length > PROPERTY_IMAGE_MAX_FILES) {
     return uploadError(`Upload no more than ${PROPERTY_IMAGE_MAX_FILES} images at once`);
   }
+  if (files.reduce((total, file) => total + file.size, 0) > PROPERTY_IMAGE_MAX_BATCH_BYTES) {
+    return uploadError('The upload batch must be no larger than 50 MB');
+  }
 
   const requestedPropertyId = formData.get('property_id');
   const propertyId = typeof requestedPropertyId === 'string' && requestedPropertyId
@@ -45,6 +50,8 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
+  const user = await getUser();
+  if (!user) return uploadError('Authentication required', 401);
   if (propertyId) {
     const { data, error } = await supabase
       .from('properties')
@@ -71,7 +78,9 @@ export async function POST(request: Request) {
     validated.push({ file, bytes, mimeType });
   }
 
-  const group = propertyId ? `properties/${propertyId}` : `uploads/${crypto.randomUUID()}`;
+  const group = propertyId
+    ? `properties/${propertyId}`
+    : `uploads/${user.id}/${crypto.randomUUID()}`;
   const uploadedPaths: string[] = [];
   const images: Array<{ url: string; storage_path: string; original_name: string }> = [];
 
@@ -114,9 +123,49 @@ export async function DELETE(request: Request) {
   }
 
   const supabase = await createClient();
+  const user = await getUser();
+  if (!user) return uploadError('Authentication required', 401);
+
+  const paths = [...new Set(parsed.data.paths)];
+  for (const path of paths) {
+    const parts = path.split('/');
+    if (parts[0] === 'properties') {
+      if (!parsed.data.property_id || parts[1] !== parsed.data.property_id) {
+        return uploadError('Image path does not belong to this property', 403);
+      }
+    } else if (parts[0] === 'uploads') {
+      // New temporary uploads are namespaced to the authenticated uploader.
+      // Legacy three-part upload paths may still exist in saved galleries,
+      // but this cleanup endpoint never accepts them.
+      if (parts.length !== 4 || parts[1] !== user.id) {
+        return uploadError('Image path does not belong to this upload session', 403);
+      }
+    }
+  }
+
+  const urls = paths.map((path) =>
+    supabase.storage.from(PROPERTY_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl
+  );
+  const [{ data: galleryReferences, error: galleryError }, { data: coverReferences, error: coverError }] =
+    await Promise.all([
+      supabase.from('property_images').select('id').in('url', urls).limit(1),
+      supabase.from('properties').select('id').in('featured_image', urls).limit(1),
+    ]);
+
+  if (galleryError || coverError) {
+    console.error('Property image reference check failed:', {
+      gallery: galleryError?.message,
+      cover: coverError?.message,
+    });
+    return uploadError('Unable to verify the image right now', 500);
+  }
+  if ((galleryReferences?.length ?? 0) > 0 || (coverReferences?.length ?? 0) > 0) {
+    return uploadError('Attached property images must be removed by saving the gallery', 409);
+  }
+
   const { error } = await supabase.storage
     .from(PROPERTY_IMAGE_BUCKET)
-    .remove([...new Set(parsed.data.paths)]);
+    .remove(paths);
   if (error) {
     console.error('Property image cleanup failed:', { message: error.message });
     return uploadError('Unable to remove the image right now', 500);

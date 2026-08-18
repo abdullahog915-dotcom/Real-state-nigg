@@ -51,16 +51,8 @@ export function LoginForm({ next }: LoginFormProps) {
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
-        if (message.includes('invalid login credentials')) {
-          setServerError('Invalid email or password.');
-        } else if (message.includes('email not confirmed')) {
-          setServerError(
-            'Please confirm your email before signing in. Check your inbox for the confirmation link.'
-          );
-        } else {
-          setServerError('Unable to sign in right now. Please try again.');
-        }
+        // Do not reveal whether the address exists or is awaiting confirmation.
+        setServerError('Invalid email or password, or the account is not yet confirmed.');
         return;
       }
 

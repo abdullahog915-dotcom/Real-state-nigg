@@ -11,6 +11,7 @@ import {
   PROPERTY_STATUSES,
   PROPERTY_TYPES,
   TRANSACTION_TYPES,
+  httpUrlSchema,
   propertyImageSchema,
 } from '@/lib/admin-schemas';
 
@@ -40,8 +41,8 @@ const updatePropertySchema = z.object({
   floors: z.number().int().min(0).max(500).nullable().optional(),
   is_furnished: z.boolean().optional(),
   agent_id: z.string().uuid().nullable().optional(),
-  featured_image: z.string().trim().max(2048).optional().or(z.literal('')),
-  video_url: z.string().trim().url().max(2048).optional().or(z.literal('')),
+  featured_image: httpUrlSchema.optional().or(z.literal('')),
+  video_url: httpUrlSchema.optional().or(z.literal('')),
   meta_title: z.string().trim().max(200).optional().or(z.literal('')),
   meta_description: z.string().trim().max(500).optional().or(z.literal('')),
   is_featured: z.boolean().optional(),
@@ -51,6 +52,52 @@ const updatePropertySchema = z.object({
 });
 
 const uuidSchema = z.string().uuid();
+
+/** Delete objects only after confirming no remaining property row references them. */
+async function removeUnreferencedManagedImages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  paths: string[]
+) {
+  const uniquePaths = [...new Set(paths)];
+  if (uniquePaths.length === 0) return;
+
+  const pathByUrl = new Map(
+    uniquePaths.map((path) => [
+      supabase.storage.from(PROPERTY_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl,
+      path,
+    ])
+  );
+  const urls = [...pathByUrl.keys()];
+  const [{ data: galleryRows, error: galleryError }, { data: coverRows, error: coverError }] =
+    await Promise.all([
+      supabase.from('property_images').select('url').in('url', urls),
+      supabase.from('properties').select('featured_image').in('featured_image', urls),
+    ]);
+
+  if (galleryError || coverError) {
+    console.error('Error checking shared property image references:', {
+      gallery: galleryError?.message,
+      cover: coverError?.message,
+    });
+    return;
+  }
+
+  const referencedUrls = new Set([
+    ...(galleryRows ?? []).map((row) => row.url),
+    ...(coverRows ?? []).map((row) => row.featured_image),
+  ]);
+  const removablePaths = [...pathByUrl.entries()]
+    .filter(([url]) => !referencedUrls.has(url))
+    .map(([, path]) => path);
+  if (removablePaths.length === 0) return;
+
+  const { error } = await supabase.storage
+    .from(PROPERTY_IMAGE_BUCKET)
+    .remove(removablePaths);
+  if (error) {
+    console.error('Error removing unreferenced property images:', error.message);
+  }
+}
 
 /**
  * PATCH /api/admin/properties/[id]
@@ -189,12 +236,7 @@ export async function PATCH(
     );
     const orphanedPaths = previousManagedPaths.filter((path) => !retainedManagedPaths.has(path));
     if (orphanedPaths.length > 0) {
-      const { error: cleanupError } = await supabase.storage
-        .from(PROPERTY_IMAGE_BUCKET)
-        .remove(orphanedPaths);
-      if (cleanupError) {
-        console.error('Error removing replaced property images:', cleanupError.message);
-      }
+      await removeUnreferencedManagedImages(supabase, orphanedPaths);
     }
   }
 
@@ -267,12 +309,7 @@ export async function DELETE(
   }
 
   if (managedPaths.length > 0) {
-    const { error: cleanupError } = await supabase.storage
-      .from(PROPERTY_IMAGE_BUCKET)
-      .remove(managedPaths);
-    if (cleanupError) {
-      console.error('Error removing deleted property images:', cleanupError.message);
-    }
+    await removeUnreferencedManagedImages(supabase, managedPaths);
   }
 
   return NextResponse.json({ success: true });

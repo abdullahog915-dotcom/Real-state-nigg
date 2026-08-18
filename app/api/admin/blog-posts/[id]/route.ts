@@ -3,16 +3,16 @@ import { z } from 'zod';
 import { adminApiGuard } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { slugify } from '@/lib/utils';
-import { BLOG_POST_STATUSES } from '@/lib/admin-schemas';
+import { BLOG_POST_STATUSES, httpUrlSchema } from '@/lib/admin-schemas';
 
 /** Partial update schema for blog posts (migration 014). */
 const updateBlogPostSchema = z.object({
   title: z.string().trim().min(3, 'Title is too short').max(250, 'Title is too long').optional(),
   slug: z.string().trim().max(250).optional(),
-  content: z.string().trim().min(1, 'Content is required').optional(),
+  content: z.string().trim().min(1, 'Content is required').max(200_000, 'Content is too long').optional(),
   excerpt: z.string().trim().max(1000).optional().or(z.literal('')),
   category_id: z.string().uuid().optional().or(z.literal('')),
-  featured_image: z.string().trim().max(2048).optional().or(z.literal('')),
+  featured_image: httpUrlSchema.optional().or(z.literal('')),
   status: z.enum(BLOG_POST_STATUSES).optional(),
   meta_title: z.string().trim().max(200).optional().or(z.literal('')),
   meta_description: z.string().trim().max(500).optional().or(z.literal('')),

@@ -1,8 +1,47 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const DEFAULT_API_BODY_LIMIT = 1024 * 1024;
+const PROPERTY_IMAGE_REQUEST_LIMIT = 52 * 1024 * 1024;
+
+/** Reject browser cross-site mutations before cookie-backed auth is evaluated. */
+function crossSiteMutationResponse(request: NextRequest): NextResponse | null {
+  if (!request.nextUrl.pathname.startsWith('/api/') || SAFE_METHODS.has(request.method)) {
+    return null;
+  }
+
+  const contentLength = Number(request.headers.get('content-length'));
+  const bodyLimit = request.nextUrl.pathname === '/api/admin/property-images'
+    ? PROPERTY_IMAGE_REQUEST_LIMIT
+    : DEFAULT_API_BODY_LIMIT;
+  if (Number.isFinite(contentLength) && contentLength > bodyLimit) {
+    return NextResponse.json({ error: 'Request body is too large' }, { status: 413 });
+  }
+
+  if (request.headers.get('sec-fetch-site') === 'cross-site') {
+    return NextResponse.json({ error: 'Cross-site request blocked' }, { status: 403 });
+  }
+
+  const origin = request.headers.get('origin');
+  if (!origin) return null;
+
+  try {
+    if (new URL(origin).origin !== request.nextUrl.origin) {
+      return NextResponse.json({ error: 'Cross-site request blocked' }, { status: 403 });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Cross-site request blocked' }, { status: 403 });
+  }
+
+  return null;
+}
+
 // Middleware helper for authentication
 export async function updateSession(request: NextRequest) {
+  const crossSiteResponse = crossSiteMutationResponse(request);
+  if (crossSiteResponse) return crossSiteResponse;
+
   // Expose the real request path to Server Components (the root layout
   // hides public chrome on /admin routes). Set unconditionally so a
   // client-supplied header value is always overwritten.
@@ -64,19 +103,29 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const copyRefreshedCookies = (target: NextResponse) => {
+    for (const cookie of response.cookies.getAll()) {
+      target.cookies.set(cookie);
+    }
+    return target;
+  };
+
+  // Keep private favorites out of streamed page shells as well as database
+  // results. The page-level redirect remains as defense in depth.
+  if (request.nextUrl.pathname === '/favorites' && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.search = '';
+    loginUrl.searchParams.set('next', '/favorites');
+    return copyRefreshedCookies(NextResponse.redirect(loginUrl));
+  }
+
   // Layouts and pages can render in parallel in the App Router. Enforce the
   // admin boundary here so an unauthorized request never starts rendering an
   // admin child page (and therefore cannot receive admin data in an RSC stream).
   const isAdminPath = request.nextUrl.pathname === '/admin'
     || request.nextUrl.pathname.startsWith('/admin/');
   if (isAdminPath) {
-    const copyRefreshedCookies = (target: NextResponse) => {
-      for (const cookie of response.cookies.getAll()) {
-        target.cookies.set(cookie);
-      }
-      return target;
-    };
-
     if (!user) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';

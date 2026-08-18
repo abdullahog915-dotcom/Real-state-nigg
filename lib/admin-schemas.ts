@@ -12,6 +12,17 @@
  */
 import { z } from 'zod';
 
+/** Public-facing media links must use browser-safe network protocols. */
+export const httpUrlSchema = z
+  .string()
+  .trim()
+  .url('Enter a valid URL')
+  .max(2048)
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  }, 'Only HTTP or HTTPS URLs are allowed');
+
 export const PROPERTY_TYPES = [
   'apartment',
   'duplex',
@@ -68,7 +79,7 @@ export const PROFILE_ROLES = ['customer', 'agent', 'admin'] as const;
  * property — routes keep only the first flagged image.
  */
 export const propertyImageSchema = z.object({
-  url: z.string().trim().url('Enter a valid image URL').max(2048),
+  url: httpUrlSchema,
   alt_text: z
     .string()
     .trim()

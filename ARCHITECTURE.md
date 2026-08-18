@@ -786,7 +786,7 @@ USING (
 3. All data mutations protected by RLS
 4. Admin routes protected at Next.js middleware level
 5. File uploads restricted by bucket policies
-6. Rate limiting implemented for forms
+6. Production rate limiting is enforced at the Cloudflare edge (Phase 9); application validation and request-size checks remain defense in depth
 
 ---
 
@@ -881,6 +881,15 @@ USING (
 - `/admin*` authorization is decided in middleware before App Router page rendering begins. Anonymous requests receive an HTTP redirect to login; authenticated non-admins are redirected to a dedicated noindex access-denied page.
 - The admin layout guard remains as defense in depth, every admin API route retains `adminApiGuard()`, and Supabase RLS remains authoritative for data access.
 - This request-boundary check is required because App Router layouts and child pages can render in parallel; a redirect initiated only by the layout can otherwise leave child data in the streamed RSC response.
+
+### Phase 8 Security Hardening
+
+- `supabase/migrations/019_security_hardening.sql` narrows direct anonymous inserts to the same initial state and length rules as the public APIs, limits agents to assigned inquiry/viewing records, protects customer fields from agent-side rewrites, hardens every `SECURITY DEFINER` search path, and adds per-bucket MIME/size limits. It is active in the linked project; migrations 001–019 and the resulting remote policies/functions/triggers/bucket restrictions were verified after application.
+- Browser `POST`/`PATCH`/`DELETE` requests under `/api/*` reject a foreign `Origin` or `Sec-Fetch-Site: cross-site`. Supabase's SameSite cookie behavior remains the primary ambient-cookie mitigation, while this boundary supplies an explicit CSRF check. No permissive CORS headers are emitted.
+- Property uploads use server-generated UUID object names, a 10 MB per-file and 50 MB per-batch limit, MIME allowlisting, and structural JPEG/PNG/WebP checks. Temporary upload paths include the authenticated uploader ID; direct cleanup refuses attached images, and property cleanup preserves objects referenced by another record.
+- Global response headers set a compatible partial CSP (`base-uri`, `object-src`, and `frame-ancestors`), deny framing, disable MIME sniffing, limit referrer detail, and disable unused browser camera/microphone/geolocation features. HSTS remains a production-only Phase 9 decision.
+- The application requires only the public Supabase URL and anon key. Admin authorization always uses the verified session plus RLS; no service-role credential is read by application code.
+- A robust distributed limiter is deferred to Phase 9. Login/signup call Supabase Auth directly, so configure Supabase Auth rate limits and Turnstile there. Initial Cloudflare edge targets for application routes: contact/inquiry/viewing 5 submissions/hour/IP per endpoint, image uploads 30 requests/hour/admin, favorites 60 mutations/minute/user, and other admin mutations 120/minute/admin. Tune from production telemetry and return `429` with a short `Retry-After`.
 
 ### Image Optimization Strategy
 
@@ -1281,7 +1290,6 @@ npm run build
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ... (for admin operations)
 NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 NEXT_PUBLIC_WHATSAPP_NUMBER=234XXXXXXXXXX
 NEXT_PUBLIC_GOOGLE_MAPS_KEY=AIza...
@@ -1401,9 +1409,9 @@ jobs:
 - ✅ Admin routes protected by middleware
 - ✅ Form inputs validated (client + server)
 - ✅ File uploads restricted by bucket policies
-- ✅ HTTPS enforced
-- ✅ CORS configured correctly
-- ✅ Rate limiting on public forms
+- ⏳ HTTPS/HSTS enforcement to be verified on the production Cloudflare hostname in Phase 9
+- ✅ No permissive CORS headers; browser mutations are same-origin and cross-site requests are rejected at the request boundary
+- ⏳ Cloudflare rate limiting and bot controls for public forms/auth are required in Phase 9
 - ✅ SQL injection prevented (Supabase parameterized queries)
 - ✅ XSS prevented (React auto-escaping)
 - ✅ Secrets stored in environment variables

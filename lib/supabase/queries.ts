@@ -385,6 +385,20 @@ export interface PropertyListFilters {
 }
 
 /**
+ * `.or()` accepts raw PostgREST filter grammar, so public values used there
+ * must be bounded and stripped of grammar metacharacters first.
+ */
+function sanitizePostgrestSearchTerm(value?: string): string | undefined {
+  const cleaned = value
+    ?.normalize('NFKC')
+    .replace(/[^\p{L}\p{N}\s'-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100);
+  return cleaned || undefined;
+}
+
+/**
  * Build the base filtered query with all filter conditions applied.
  * Shared between count and data queries to avoid duplication.
  * Uses `any` for the PostgREST builder type because Supabase's
@@ -469,13 +483,18 @@ export async function getProperties(filters: PropertyListFilters = {}) {
     per_page = 12,
   } = filters;
 
+  const safeKeyword = sanitizePostgrestSearchTerm(keyword);
+  const safeLocation = sanitizePostgrestSearchTerm(location);
+
   // Resolve location IDs early (needed by both count and data queries)
   let locationIds: string[] | undefined;
-  if (location) {
+  if (safeLocation) {
     const { data: locationRows } = await supabase
       .from('locations')
       .select('id')
-      .or(`name.ilike.%${location}%,city.ilike.%${location}%,slug.ilike.%${location}%`);
+      .or(
+        `name.ilike.%${safeLocation}%,city.ilike.%${safeLocation}%,slug.ilike.%${safeLocation}%`
+      );
 
     if (locationRows && locationRows.length > 0) {
       locationIds = locationRows.map((l) => l.id);
@@ -484,7 +503,15 @@ export async function getProperties(filters: PropertyListFilters = {}) {
     }
   }
 
-  const filterArgs = { transaction_type, property_type, bedrooms, min_price, max_price, keyword, locationIds };
+  const filterArgs = {
+    transaction_type,
+    property_type,
+    bedrooms,
+    min_price,
+    max_price,
+    keyword: safeKeyword,
+    locationIds,
+  };
 
   // Step 1: Get total count (HEAD request — no body transferred)
   const countQuery = applyPropertyFilters(
