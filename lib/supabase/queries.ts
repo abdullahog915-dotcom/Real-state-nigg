@@ -101,7 +101,7 @@ export async function getFeaturedProperties(limit = 6) {
       )
     `)
     .in('status', ['published', 'featured'])
-    .not('id', 'in', `(${featuredIds.map((id) => `'${id}'`).join(',')})`)
+    .not('id', 'in', `(${featuredIds.map((id) => id).join(',')})`)
     .order('published_at', { ascending: false })
     .limit(remaining);
 
