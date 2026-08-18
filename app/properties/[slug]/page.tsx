@@ -239,7 +239,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 )}
               </div>
 
-              <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+              <h1 className="mt-3 text-lg font-bold tracking-tight sm:text-xl lg:text-2xl max-w-3xl">
                 {property.title}
               </h1>
 
