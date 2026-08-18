@@ -400,10 +400,10 @@ export function PropertyForm({
         </CardContent>
       </Card>
 
-      {/* Pricing & assignment */}
+      {/* Pricing, Location & Options */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pricing &amp; Assignment</CardTitle>
+          <CardTitle className="text-base">Pricing, Location &amp; Options</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
