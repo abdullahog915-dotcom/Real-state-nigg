@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -7,14 +7,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Client-side Supabase client
-// Use this in Client Components and browser contexts
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+// Browser-side Supabase client using @supabase/ssr's createBrowserClient.
+// Sessions are persisted in cookies (NOT localStorage) so the SSR
+// middleware (createServerClient) can read the same session on the
+// next request. Using @supabase/supabase-js here would store sessions
+// in localStorage, breaking the client/server session handoff.
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 // Helper to get current user
 export async function getCurrentUser() {
