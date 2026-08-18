@@ -13,15 +13,7 @@ import {
   type PropertyListFilters,
 } from '@/lib/supabase/queries';
 import { getTransactionTypeLabel } from '@/lib/utils';
-
-export const metadata: Metadata = {
-  title: 'Properties in Nigeria | Buy, Rent & Short Let',
-  description:
-    'Browse properties for sale, rent, and short let across Lagos, Abuja, and Port Harcourt. Filter by type, location, bedrooms, and price to find your perfect Nigerian property.',
-  alternates: {
-    canonical: '/properties',
-  },
-};
+import { buildPageMetadata } from '@/lib/seo';
 
 interface PropertiesPageProps {
   searchParams: Promise<{
@@ -35,6 +27,44 @@ interface PropertiesPageProps {
     sort?: string;
     page?: string;
   }>;
+}
+
+const TRANSACTION_PATHS: Record<string, string> = {
+  sale: '/properties/buy',
+  rent: '/properties/rent',
+  'short-let': '/properties/short-let',
+};
+
+export async function generateMetadata({ searchParams }: PropertiesPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || '1', 10) || 1);
+  const activeEntries = Object.entries(params).filter(([, value]) => Boolean(value));
+  const typePath = params.type ? TRANSACTION_PATHS[params.type] : undefined;
+  const isIndexableBrowsePage = activeEntries.every(([key]) => key === 'type' || key === 'page')
+    && (!params.type || Boolean(typePath));
+
+  if (isIndexableBrowsePage) {
+    const basePath = typePath || '/properties';
+    const canonical = page > 1 ? `${basePath}?page=${page}` : basePath;
+    const transactionLabel = params.type
+      ? getTransactionTypeLabel(params.type)
+      : 'Buy, Rent & Short Let';
+
+    return buildPageMetadata({
+      title: `Properties in Nigeria | ${transactionLabel}${page > 1 ? ` | Page ${page}` : ''}`,
+      description:
+        'Browse properties for sale, rent, and short let across Lagos, Abuja, and Port Harcourt. Filter by type, location, bedrooms, and price to find your perfect Nigerian property.',
+      path: canonical,
+    });
+  }
+
+  return buildPageMetadata({
+    title: 'Property Search Results',
+    description:
+      'Search available Nigerian properties by transaction type, property type, location, bedrooms, and price.',
+    path: typePath || '/properties',
+    noIndex: true,
+  });
 }
 
 export default async function PropertiesPage({ searchParams }: PropertiesPageProps) {
@@ -67,7 +97,8 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
   // Build a helper to create page URLs preserving current filters
   function buildPageUrl(targetPage: number) {
     const urlParams = new URLSearchParams();
-    if (params.type) urlParams.set('type', params.type);
+    const basePath = params.type ? TRANSACTION_PATHS[params.type] || '/properties' : '/properties';
+    if (params.type && basePath === '/properties') urlParams.set('type', params.type);
     if (params.property_type) urlParams.set('property_type', params.property_type);
     if (params.location) urlParams.set('location', params.location);
     if (params.q) urlParams.set('q', params.q);
@@ -78,7 +109,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
     if (targetPage > 1) urlParams.set('page', String(targetPage));
 
     const qs = urlParams.toString();
-    return `/properties${qs ? `?${qs}` : ''}`;
+    return `${basePath}${qs ? `?${qs}` : ''}`;
   }
 
   // Active filter summary chips
@@ -144,7 +175,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
 
           {/* Filters */}
           <div className="mt-6">
-            <PropertyFilters locations={locations} />
+            <PropertyFilters locations={locations} defaultTransactionType={params.type} />
           </div>
         </div>
       </section>

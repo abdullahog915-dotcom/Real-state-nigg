@@ -1,0 +1,21 @@
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database.types';
+
+/**
+ * Anonymous, cookie-free client for public infrastructure such as sitemap
+ * generation. It cannot inherit a signed-in role and remains constrained by
+ * the public RLS policies.
+ */
+export function createPublicClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
+    }
+  );
+}

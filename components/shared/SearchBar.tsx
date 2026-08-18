@@ -33,12 +33,17 @@ export function SearchBar({ variant = 'hero' }: SearchBarProps) {
     e.preventDefault();
 
     const params = new URLSearchParams();
-    if (transactionType) params.set('type', transactionType);
     if (propertyType) params.set('property_type', propertyType);
     if (location) params.set('location', location);
     if (keyword) params.set('q', keyword);
 
-    const href = `/properties${params.toString() ? `?${params.toString()}` : ''}`;
+    const transactionPath: Record<string, string> = {
+      sale: '/properties/buy',
+      rent: '/properties/rent',
+      'short-let': '/properties/short-let',
+    };
+    const basePath = transactionPath[transactionType] || '/properties';
+    const href = `${basePath}${params.toString() ? `?${params.toString()}` : ''}`;
     router.push(href);
   }
 

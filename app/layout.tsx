@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SITE_CONFIG } from "@/lib/constants";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { getSiteUrl } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,6 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: getSiteUrl(),
   title: {
     default: SITE_CONFIG.name,
     template: `%s | ${SITE_CONFIG.name}`,
@@ -29,6 +31,13 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: SITE_CONFIG.name }],
   creator: SITE_CONFIG.name,
+  publisher: SITE_CONFIG.name,
+  category: "real estate",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: "website",
     locale: "en_NG",
@@ -38,7 +47,7 @@ export const metadata: Metadata = {
     description: SITE_CONFIG.description,
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: SITE_CONFIG.name,
     description: SITE_CONFIG.description,
   },

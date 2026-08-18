@@ -21,14 +21,15 @@ import {
 
 interface PropertyFiltersProps {
   locations?: { id: string; name: string; city: string }[];
+  defaultTransactionType?: string;
 }
 
-export function PropertyFilters({ locations }: PropertyFiltersProps) {
+export function PropertyFilters({ locations, defaultTransactionType = '' }: PropertyFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Read current filter values from URL
-  const currentType = searchParams.get('type') || '';
+  const currentType = searchParams.get('type') || defaultTransactionType;
   const currentPropertyType = searchParams.get('property_type') || '';
   const currentLocation = searchParams.get('location') || '';
   const currentKeyword = searchParams.get('q') || '';

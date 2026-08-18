@@ -45,8 +45,16 @@ import { CompareButton } from '@/components/compare/CompareButton';
 import { CompareBar } from '@/components/compare/CompareBar';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { SectionHeading } from '@/components/shared/SectionHeading';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { getPropertyBySlug, getRelatedProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
 import { CONTACT_INFO } from '@/lib/constants';
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  buildPageMetadata,
+  publicImageUrl,
+  toMetaDescription,
+} from '@/lib/seo';
 import {
   formatPrice,
   formatArea,
@@ -93,29 +101,34 @@ export async function generateMetadata({
   const property = await getPropertyBySlug(slug);
 
   if (!property) {
-    return { title: 'Property Not Found' };
+    return buildPageMetadata({
+      title: 'Property Not Found',
+      description: 'The requested property listing is not publicly available.',
+      path: `/properties/${slug}`,
+      noIndex: true,
+    });
   }
 
   const location = Array.isArray(property.locations)
     ? property.locations[0]
     : property.locations;
   const locationLabel = location ? `${location.name}, ${location.city}` : 'Nigeria';
-  const title = `${property.title} — ${getTransactionTypeLabel(property.transaction_type)} in ${locationLabel}`;
-  const description = property.meta_description
-    || (property.description ? truncate(property.description, 160) : `${getPropertyTypeLabel(property.property_type)} ${getTransactionTypeLabel(property.transaction_type).toLowerCase()} in ${locationLabel}.`);
+  const generatedTitle = `${property.title} — ${getTransactionTypeLabel(property.transaction_type)} in ${locationLabel}`;
+  const title = property.meta_title || truncate(generatedTitle, 60);
+  const description = toMetaDescription(
+    property.meta_description
+      || property.description
+      || `${getPropertyTypeLabel(property.property_type)} ${getTransactionTypeLabel(property.transaction_type).toLowerCase()} in ${locationLabel}.`
+  );
   const ogImage = property.og_image || property.featured_image;
 
-  return {
-    title: truncate(title, 70),
+  return buildPageMetadata({
+    title,
     description,
-    alternates: { canonical: `/properties/${property.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
-    },
-  };
+    path: `/properties/${property.slug}`,
+    image: ogImage,
+    absoluteTitle: Boolean(property.meta_title),
+  });
 }
 
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
@@ -170,6 +183,79 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
     ? [location.name, location.city, location.state].filter(Boolean).join(', ')
     : property.address || 'Nigeria';
 
+  const schemaDescription = property.meta_description
+    || (property.description
+      ? truncate(property.description, 300)
+      : `${getPropertyTypeLabel(property.property_type)} ${getTransactionTypeLabel(property.transaction_type).toLowerCase()} in ${locationLabel}.`);
+  const schemaImages = [
+    property.featured_image,
+    ...galleryImages.map((image) => image.url),
+  ]
+    .map(publicImageUrl)
+    .filter((image): image is string => Boolean(image));
+  const accommodationType = property.property_type === 'apartment'
+    ? 'Apartment'
+    : ['land', 'commercial', 'office', 'warehouse', 'shop', 'hotel'].includes(property.property_type)
+      ? 'Place'
+      : 'Residence';
+  const propertyUrl = absoluteUrl(`/properties/${property.slug}`);
+  const propertySchema = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateListing',
+    '@id': `${propertyUrl}#listing`,
+    url: propertyUrl,
+    name: property.title,
+    description: schemaDescription,
+    datePosted: property.published_at || property.created_at,
+    ...(schemaImages.length > 0 ? { image: schemaImages } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: String(property.price),
+      priceCurrency: property.currency || 'NGN',
+      availability: 'https://schema.org/InStock',
+      url: propertyUrl,
+    },
+    about: {
+      '@type': accommodationType,
+      name: property.title,
+      ...(schemaImages.length > 0 ? { image: schemaImages } : {}),
+      address: {
+        '@type': 'PostalAddress',
+        ...(property.address ? { streetAddress: property.address } : {}),
+        ...(location?.name ? { addressLocality: location.name } : {}),
+        ...(location?.state ? { addressRegion: location.state } : {}),
+        addressCountry: 'NG',
+      },
+      ...(property.bedrooms != null ? { numberOfBedrooms: property.bedrooms } : {}),
+      ...(property.bathrooms != null
+        ? { numberOfBathroomsTotal: property.bathrooms }
+        : {}),
+      ...(property.area != null
+        ? {
+            floorSize: {
+              '@type': 'QuantitativeValue',
+              value: Number(property.area),
+              unitCode: 'MTK',
+            },
+          }
+        : {}),
+      ...(amenities.length > 0
+        ? {
+            amenityFeature: amenities.map((amenity) => ({
+              '@type': 'LocationFeatureSpecification',
+              name: amenity.name,
+              value: true,
+            })),
+          }
+        : {}),
+    },
+  };
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Properties', path: '/properties' },
+    { name: property.title, path: `/properties/${property.slug}` },
+  ]);
+
   // Feature items shown only when values exist
   const features: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }[] = [];
   if (property.bedrooms != null) {
@@ -199,6 +285,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
   return (
     <>
+      <JsonLd data={[propertySchema, breadcrumbSchema]} />
       {/* Breadcrumbs */}
       <div className="border-b bg-muted/30">
         <div className="container mx-auto px-4 py-3">

@@ -4,21 +4,21 @@
 **Type:** Premium Commercial Real Estate Platform  
 **Target Market:** Nigerian Real Estate Agencies  
 **Price Point:** $500–$1,000  
-**Last Updated:** 2026-08-18
+**Last Updated:** 2026-08-19
 
 ---
 
 ## CURRENT PHASE
 
-**PHASE 6 — ADMIN DASHBOARD (ACTIVE VERIFICATION)**
+**PHASE 7 — SEO & PERFORMANCE (VERIFIED)**
 
-Status: 🟡 IN PROGRESS — Dashboard diagnostics, property switches, secure image upload, and Light/Dark theming are implemented; final owner-session write walkthrough remains
+Status: ✅ COMPLETE — Public metadata, structured data, crawl controls, canonical strategy, query optimization, caching decisions, responsive behavior, and production rendering verified
 
 ---
 
 ## CURRENT TASK
 
-Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnished switches, property image upload/management, and application-wide Light/Dark theming. Automated read-only live-database, RLS, production-build, public-page, theme, and responsive checks pass. Final authenticated admin mutations must be exercised in the project owner's existing browser session before Phase 6 is marked complete.
+Phase 7 is implemented and verified. Public routes now have intentional metadata and indexing rules, dynamic detail pages use live Supabase content, JSON-LD is safely serialized, the sitemap uses public RLS-backed data, and robots exclusions cover private/internal areas. Query payloads and duplicate request reads were reduced without introducing public caching of session-aware pages.
 
 ✅ **Migration `018_protect_profile_role.sql` has been applied to the live database** (2026-08-15 via `supabase db query --linked`; function + trigger verified to exist).
 
@@ -77,9 +77,23 @@ Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnish
 
 ---
 
-## IN PROGRESS
+## RECENTLY COMPLETED
 
-### Phase 6 — Admin Dashboard 🟡 ACTIVE VERIFICATION (2026-08-18)
+No phase is currently in progress. Phase 8 has not been started.
+
+### Phase 7 — SEO & Performance ✅ COMPLETE (2026-08-19)
+- ✅ Unique metadata, canonical URLs, Open Graph, and Twitter metadata across public routes
+- ✅ Dynamic property, location, agent, and blog metadata from public Supabase data
+- ✅ Safe JSON-LD for the site business, properties, agents, articles, and detail breadcrumbs
+- ✅ RLS-backed dynamic sitemap and explicit robots exclusions
+- ✅ Dedicated indexable buy/rent/short-let landing routes; transient property filters are `noindex`
+- ✅ Private/auth routes and invalid dynamic content are `noindex`; admin is absent from the sitemap
+- ✅ Request-level query memoization and smaller card query payloads
+- ✅ Image dimensions, responsive `sizes`, loading priorities, client boundaries, and `next/font` audited
+- ✅ Lab checks met documented LCP/CLS targets on representative mobile and desktop routes
+- ✅ TypeScript, ESLint, production build, rendered HTML, themes, and responsive overflow verified
+
+### Phase 6 — Admin Dashboard ✅ COMPLETE (2026-08-18)
 - ✅ Admin authentication (three-layer: layout gate + `adminApiGuard()` + RLS admin policies; no service_role)
 - ✅ Dashboard overview (`/admin` — 8 live stat cards + recent activity feeds, all real queries)
 - ✅ Property CRUD (`/admin/properties` — list/filter/paginate, create/edit form, gallery rows, amenities, featured toggle, delete)
@@ -92,7 +106,7 @@ Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnish
 - ✅ Users overview (`/admin/users` — read-only profiles; roles managed in DB per migration 018)
 - ✅ Image upload/management implemented (authenticated RLS endpoint, JPEG/PNG/WebP validation, 10 MB limit, multiple upload/progress/previews/alt text/cover/order, managed-object cleanup, external URL compatibility)
 - ✅ Light/Dark theme implemented across the public and admin shells with persisted preference, Light fallback for legacy `system` values, original Light visuals, and premium near-black/gold semantic tokens for Dark
-- 🟡 Owner-session verification pending for property boolean persistence and real Storage upload/save/reload
+- ✅ Owner-session verification completed before commit `c722b35`
 - ⬜ Site settings management (deferred — no schema gaps, can be added as a small follow-up)
 
 ### Phase 5 — Conversion Features ✅ COMPLETE (2026-08-15)
@@ -149,15 +163,6 @@ Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnish
 ### Phase 6 — Admin Dashboard (REMAINING)
 - Image upload/management (storage upload endpoint)
 - Site settings management
-
-### Phase 7 — SEO & Performance
-- Metadata optimization
-- Structured data (Schema.org)
-- Sitemap generation
-- robots.txt
-- Image optimization
-- Core Web Vitals optimization
-- Caching strategy
 
 ### Phase 8 — Security Review
 - RLS verification
@@ -376,8 +381,10 @@ Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnish
 
 ## KNOWN ISSUES
 
-- Final authenticated admin write walkthrough is pending because the project owner's signed-in browser session is not available to command-line automation.
 - Migration 018's function/trigger exist in the live database, but `supabase migration list --linked` does not record 018 in remote migration history; do not reapply it blindly.
+- `NEXT_PUBLIC_SITE_URL` and the final brand/contact values must be set for production so canonical, sitemap, robots, and structured-data URLs use the real domain and business identity.
+- Supabase-hosted public images remain unoptimized by Next.js by design for the current Cloudflare target. Configure/verify Cloudflare image delivery and cache behavior during Phase 9 rather than introducing Vercel image infrastructure.
+- No published blog post currently exists, so Article metadata/schema was build-verified and source-reviewed but could not be exercised against a live public post.
 
 ---
 
@@ -409,12 +416,10 @@ Targeted Phase 6 debugging is implemented for dashboard counts, Featured/Furnish
 
 ## NEXT ACTION
 
-**PHASE 6 TARGETED DEBUGGING — FINAL OWNER-SESSION VERIFICATION REQUIRED**
+**PHASE 7 COMPLETE — REVIEW BEFORE COMMIT**
 
-1. In the owner's authenticated local admin session, open `/admin` and confirm the nine live counts render with no labeled PostgREST error.
-2. On an existing property, toggle Featured and Furnished in both directions, save, reload, and confirm persistence.
-3. Upload JPEG/PNG/WebP files, edit alt text/order/cover, save, reload, remove an uploaded image, and confirm the public card/detail gallery.
-4. Exercise Light/Dark in the authenticated admin pages; automated public-page persistence, legacy fallback, and responsive checks already pass.
-5. Run the final quality commands again after the owner walkthrough. Do not commit or start Phase 7 without approval.
+1. Review the Phase 7 report and indexing/canonical decisions.
+2. Set the final `NEXT_PUBLIC_SITE_URL`, site name, and contact values before production.
+3. Do not start Phase 8 or Phase 9 until Phase 7 changes are approved and committed.
 
 **Note:** The live database currently contains real data (including one published property with three gallery images, agents, locations, one inquiry, and one registered user); older empty-database notes are obsolete.

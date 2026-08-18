@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { getLocationBySlug, getLocationProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
-import { truncate } from '@/lib/utils';
+import { breadcrumbJsonLd, buildPageMetadata, toMetaDescription } from '@/lib/seo';
 
 interface LocationDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -21,24 +22,23 @@ export async function generateMetadata({
   const location = await getLocationBySlug(slug);
 
   if (!location) {
-    return { title: 'Location Not Found' };
+    return buildPageMetadata({
+      title: 'Location Not Found',
+      description: 'The requested Nigerian property location could not be found.',
+      path: `/locations/${slug}`,
+      noIndex: true,
+    });
   }
 
   const description = location.description
-    ? truncate(location.description, 160)
+    ? toMetaDescription(location.description)
     : `Browse properties for sale, rent, and short let in ${location.name}, ${location.city}, ${location.state}.`;
 
-  return {
-    title: `${location.name} Properties | ${location.city}, ${location.state}`,
+  return buildPageMetadata({
+    title: `Properties for Sale & Rent in ${location.name}, ${location.city}`,
     description,
-    alternates: {
-      canonical: `/locations/${location.slug}`,
-    },
-    openGraph: {
-      title: `${location.name} Properties | ${location.city}, ${location.state}`,
-      description,
-    },
-  };
+    path: `/locations/${location.slug}`,
+  });
 }
 
 export default async function LocationDetailPage({ params }: LocationDetailPageProps) {
@@ -53,9 +53,15 @@ export default async function LocationDetailPage({ params }: LocationDetailPageP
     getLocationProperties(location.id),
     getFavoritePropertyIds(),
   ]);
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Locations', path: '/locations' },
+    { name: location.name, path: `/locations/${location.slug}` },
+  ]);
 
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       {/* Breadcrumb */}
       <div className="border-b bg-muted/30">
         <div className="container mx-auto px-4 py-3">

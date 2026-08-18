@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 7 — SEO & Performance (2026-08-19)
+
+#### SEO and public routes
+- Added one metadata builder for canonical URLs, Open Graph, Twitter cards, absolute social images, article dates, and explicit `noindex` rules; configured root `metadataBase` from `NEXT_PUBLIC_SITE_URL`.
+- Added dynamic Supabase-backed metadata for property, location, agent, and blog detail routes. Property and blog SEO fields take precedence over generated fallbacks; missing/unpublished detail content is `noindex` and handled by `notFound()`.
+- Added dedicated `/properties/buy`, `/properties/rent`, and `/properties/short-let` landing routes. These and useful pagination/category pages are self-canonical; transient search/filter combinations are `noindex` and canonical to the nearest stable listing route.
+- Added complete public pages for `/about`, `/privacy-policy`, and `/terms`, replacing dead footer destinations, plus a global accessible not-found page.
+- Marked login, signup, favorites, compare, unknown filters/categories, and unavailable detail records as non-indexable where appropriate.
+
+#### Structured data and crawl controls
+- Added XSS-safe JSON-LD serialization. The homepage emits the configured business as `RealEstateAgent`; property pages emit `RealEstateListing` with the actual offer and an appropriate property/place type; agent profiles emit `RealEstateAgent`; published articles emit `Article`; all detail routes emit `BreadcrumbList`.
+- Added `app/sitemap.ts` with a cookie-free anonymous Supabase client constrained by public RLS. It includes static public routes, published/featured properties, active agents, locations, and published blog posts, retains available modification dates/images, refreshes hourly, and tolerates an empty/failed optional dataset.
+- Added `app/robots.ts`: public crawling is allowed while `/access-denied`, `/admin`, `/api`, `/auth`, and `/favorites` are disallowed; the generated sitemap and host are declared.
+
+#### Performance and data access
+- Audited public images: existing intrinsic aspect ratios, responsive `sizes`, lazy-loading defaults, and selective hero/detail priority prevent layout shifts. `images.unoptimized` remains intentional for Cloudflare compatibility; no Vercel-only image service or destructive source-image changes were introduced.
+- Split property/blog card projections from detail projections so location, agent, related-property, blog-list, and related-blog grids no longer fetch detail-only columns such as galleries, coordinates, SEO fields, or full article content.
+- Added React request memoization for detail records, blog categories, and server auth/profile checks, removing repeated metadata/page and navbar/favorites reads within a render request.
+- Kept public pages dynamic because the shared auth-aware navigation and favorite state read session cookies. Only the anonymous sitemap is time-cached (one hour); private, admin, auth, and mutation responses are never publicly cached.
+- Audited Server/Client Component boundaries and retained only behavior-driven clients (filters, search, theme, favorites, compare, forms, galleries, and navigation controls). Existing `next/font` Inter loading and fallback behavior remains unchanged.
+
+#### Admin boundary hardening discovered during rendered-source verification
+- Moved the admin role decision to middleware for `/admin*` requests, before App Router child rendering begins. Anonymous requests now receive an HTTP 307 to login at the request boundary; authenticated non-admins are redirected to a noindex access-denied page.
+- Retained the admin layout guard, API guards, and RLS as defense in depth. This prevents parallel App Router rendering from serializing admin child data into an anonymous redirect response.
+
+#### Verification
+- TypeScript PASS; ESLint PASS; `git diff --check` PASS; Next.js 16.3 production build PASS (47 pages, generated robots, one-hour sitemap).
+- Production rendered-source checks confirmed title, description, canonical, Open Graph, Twitter, robots, and server-rendered JSON-LD on representative public routes. `/sitemap.xml` and `/robots.txt` return valid generated content; anonymous `/admin` returns an HTTP 307 before admin rendering.
+- Responsive overflow checks passed at 360, 390, 430, 768, 1024, 1366, 1440, and 1920px; Light and Dark persisted with zero observed theme layout shift.
+- Unthrottled local production lab samples at 390/1440px measured LCP 1.10–1.45s and CLS 0 across the homepage, listing, and live property detail. These are development-machine diagnostics, not field data; INP requires real interaction/field measurement after deployment.
+- Live content limitation: the database has no published blog post, so Article logic was type/build/source verified but no live article URL was available for rendered-content testing.
+
 ### Phase 6 targeted debugging and dark theme (2026-08-18)
 
 - Reworked admin dashboard counts to select only `id`, label every table/filter, retain full PostgREST diagnostics (`code`, `message`, `details`, `hint`), and throw instead of silently returning fake zeroes.

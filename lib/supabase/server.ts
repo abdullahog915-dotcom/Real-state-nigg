@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 // Server-side Supabase client
 // Use this in Server Components and Server Actions
@@ -34,14 +35,14 @@ export async function createClient() {
 }
 
 // Get current user from server
-export async function getUser() {
+export const getUser = cache(async function getUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
-}
+});
 
 // Get user profile with role
-export async function getUserProfile() {
+export const getUserProfile = cache(async function getUserProfile() {
   const supabase = await createClient();
   const user = await getUser();
 
@@ -55,16 +56,16 @@ export async function getUserProfile() {
 
   if (error) return null;
   return data;
-}
+});
 
 // Check if current user is admin
-export async function isAdmin() {
+export const isAdmin = cache(async function isAdmin() {
   const profile = await getUserProfile();
   return profile?.role === 'admin';
-}
+});
 
 // Check if current user is agent or admin
-export async function isAgent() {
+export const isAgent = cache(async function isAgent() {
   const profile = await getUserProfile();
   return profile?.role === 'agent' || profile?.role === 'admin';
-}
+});

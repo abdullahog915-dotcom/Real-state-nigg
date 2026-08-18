@@ -5,15 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ContactForm } from '@/components/forms/ContactForm';
 import { CONTACT_INFO } from '@/lib/constants';
 import { generateWhatsAppUrl } from '@/lib/utils';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Contact Us | Get in Touch',
   description:
     'Get in touch with our real estate team. Call, WhatsApp, email, or send us a message — we are happy to help with buying, renting, or short-letting property in Nigeria.',
-  alternates: {
-    canonical: '/contact',
-  },
-};
+  path: '/contact',
+});
 
 export default function ContactPage() {
   const whatsappUrl = generateWhatsAppUrl(

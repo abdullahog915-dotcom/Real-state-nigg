@@ -5,12 +5,14 @@ import { FavoritesGrid } from '@/components/favorites/FavoritesGrid';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { getUser } from '@/lib/supabase/server';
 import { getFavoriteProperties } from '@/lib/supabase/queries';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'My Favorites',
   description: 'Properties you have saved to your favorites.',
-  robots: { index: false, follow: false },
-};
+  path: '/favorites',
+  noIndex: true,
+});
 
 /**
  * Favorites page — requires authentication.

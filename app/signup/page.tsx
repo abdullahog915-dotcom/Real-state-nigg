@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getUser } from '@/lib/supabase/server';
 import { getSafeRedirectPath } from '@/lib/redirects';
 import { SignupForm } from '@/components/auth/SignupForm';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Create Account',
   description:
     'Create a free account to save favorite properties and manage your viewing requests.',
-};
+  path: '/signup',
+  noIndex: true,
+});
 
 interface SignupPageProps {
   searchParams: Promise<{ next?: string }>;

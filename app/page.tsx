@@ -18,6 +18,7 @@ import { SectionHeading } from '@/components/shared/SectionHeading';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { AgentCard } from '@/components/agents/AgentCard';
+import { JsonLd } from '@/components/seo/JsonLd';
 import {
   getFeaturedProperties,
   getFeaturedLocations,
@@ -28,17 +29,15 @@ import {
 import {
   TRANSACTION_TYPES,
   PROPERTY_TYPES,
-  SITE_CONFIG,
 } from '@/lib/constants';
+import { buildPageMetadata, organizationJsonLd } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: `Find Your Dream Property in Nigeria | ${SITE_CONFIG.name}`,
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Find Your Dream Property in Nigeria',
   description:
     'Browse premium properties for sale, rent, and short let across Lagos, Abuja, and Port Harcourt. Find apartments, duplexes, villas, and commercial spaces with trusted local agents.',
-  alternates: {
-    canonical: '/',
-  },
-};
+  path: '/',
+});
 
 export default async function HomePage() {
   // Fetch all data in parallel
@@ -52,6 +51,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={organizationJsonLd()} />
       {/* ── Hero Section ── */}
       <section className="relative bg-gradient-to-br from-primary/5 via-background to-primary/10">
         <div className="container mx-auto px-4 py-16 lg:py-24">

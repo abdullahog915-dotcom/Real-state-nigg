@@ -6,7 +6,16 @@ import { Calendar, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { BlogCard } from '@/components/blog/BlogCard';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { SectionHeading } from '@/components/shared/SectionHeading';
+import { SITE_CONFIG } from '@/lib/constants';
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  buildPageMetadata,
+  publicImageUrl,
+  toMetaDescription,
+} from '@/lib/seo';
 import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/supabase/queries';
 import { formatDate, truncate } from '@/lib/utils';
 
@@ -21,25 +30,26 @@ export async function generateMetadata({
   const post = await getBlogPostBySlug(slug);
 
   if (!post) {
-    return { title: 'Article Not Found' };
+    return buildPageMetadata({
+      title: 'Article Not Found',
+      description: 'The requested article could not be found.',
+      path: `/blog/${slug}`,
+      noIndex: true,
+    });
   }
 
-  const title = post.meta_title || post.title;
-  const description = post.meta_description
-    || (post.excerpt ? truncate(post.excerpt, 160) : truncate(post.content, 160));
+  const description = toMetaDescription(post.meta_description || post.excerpt || post.content);
 
-  return {
-    title: `${title} | Blog`,
+  return buildPageMetadata({
+    title: post.meta_title || `${post.title} | Blog`,
+    absoluteTitle: Boolean(post.meta_title),
     description,
-    alternates: {
-      canonical: `/blog/${post.slug}`,
-    },
-    openGraph: {
-      title,
-      description,
-      ...(post.featured_image ? { images: [{ url: post.featured_image }] } : {}),
-    },
-  };
+    path: `/blog/${post.slug}`,
+    image: post.featured_image,
+    type: 'article',
+    publishedTime: post.published_at,
+    modifiedTime: post.updated_at,
+  });
 }
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
@@ -55,9 +65,36 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     : post.blog_categories;
 
   const relatedPosts = await getRelatedBlogPosts(post.id, category?.id, 3);
+  const description = toMetaDescription(post.meta_description || post.excerpt || post.content);
+  const articleUrl = absoluteUrl(`/blog/${post.slug}`);
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    '@id': `${articleUrl}#article`,
+    headline: post.title,
+    description,
+    url: articleUrl,
+    mainEntityOfPage: articleUrl,
+    publisher: {
+      '@id': `${absoluteUrl('/')}#organization`,
+      name: SITE_CONFIG.name,
+    },
+    ...(post.featured_image
+      ? { image: [publicImageUrl(post.featured_image)].filter(Boolean) }
+      : {}),
+    ...(post.published_at ? { datePublished: post.published_at } : {}),
+    ...(post.updated_at ? { dateModified: post.updated_at } : {}),
+    ...(category?.name ? { articleSection: category.name } : {}),
+  };
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Blog', path: '/blog' },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ]);
 
   return (
     <>
+      <JsonLd data={[articleJsonLd, breadcrumbs]} />
       {/* Breadcrumb */}
       <div className="border-b bg-muted/30">
         <div className="container mx-auto px-4 py-3">

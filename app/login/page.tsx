@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getUser } from '@/lib/supabase/server';
 import { getSafeRedirectPath } from '@/lib/redirects';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Sign In',
   description:
     'Sign in to save favorite properties and manage your viewing requests.',
-};
+  path: '/login',
+  noIndex: true,
+});
 
 /** Only known error keys map to user-facing messages — never reflect raw input. */
 const ERROR_MESSAGES: Record<string, string> = {

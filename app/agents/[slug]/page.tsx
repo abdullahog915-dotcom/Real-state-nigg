@@ -9,8 +9,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { JsonLd } from '@/components/seo/JsonLd';
 import { getAgentBySlug, getAgentProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
-import { generateWhatsAppUrl, truncate } from '@/lib/utils';
+import { generateWhatsAppUrl } from '@/lib/utils';
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  buildPageMetadata,
+  publicImageUrl,
+  toMetaDescription,
+} from '@/lib/seo';
 
 interface AgentDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -23,29 +31,28 @@ export async function generateMetadata({
   const agent = await getAgentBySlug(slug);
 
   if (!agent) {
-    return { title: 'Agent Not Found' };
+    return buildPageMetadata({
+      title: 'Agent Not Found',
+      description: 'The requested real estate agent profile is not publicly available.',
+      path: `/agents/${slug}`,
+      noIndex: true,
+    });
   }
 
   const description = agent.bio
-    ? truncate(agent.bio, 160)
+    ? toMetaDescription(agent.bio)
     : `${agent.name} is a real estate agent${
         agent.locations && agent.locations.length > 0
           ? ` covering ${agent.locations.join(', ')}`
           : ''
       }. Browse their available property listings.`;
 
-  return {
+  return buildPageMetadata({
     title: `${agent.name} | Real Estate Agent`,
     description,
-    alternates: {
-      canonical: `/agents/${agent.slug}`,
-    },
-    openGraph: {
-      title: `${agent.name} | Real Estate Agent`,
-      description,
-      ...(agent.photo_url ? { images: [{ url: agent.photo_url }] } : {}),
-    },
-  };
+    path: `/agents/${agent.slug}`,
+    image: agent.photo_url,
+  });
 }
 
 export default async function AgentDetailPage({ params }: AgentDetailPageProps) {
@@ -67,9 +74,39 @@ export default async function AgentDetailPage({ params }: AgentDetailPageProps) 
         `Hello ${agent.name}, I found your profile on your website and would like to discuss property options.`
       )
     : null;
+  const agentUrl = absoluteUrl(`/agents/${agent.slug}`);
+  const agentImage = publicImageUrl(agent.photo_url);
+  const agentSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    '@id': `${agentUrl}#agent`,
+    name: agent.name,
+    url: agentUrl,
+    ...(agent.bio ? { description: agent.bio } : {}),
+    ...(agentImage ? { image: agentImage } : {}),
+    ...(agent.phone ? { telephone: agent.phone } : {}),
+    ...(agent.email ? { email: agent.email } : {}),
+    ...(agent.specialization && agent.specialization.length > 0
+      ? { knowsAbout: agent.specialization }
+      : {}),
+    ...(agent.locations && agent.locations.length > 0
+      ? {
+          areaServed: agent.locations.map((locationName: string) => ({
+            '@type': 'Place',
+            name: locationName,
+          })),
+        }
+      : {}),
+  };
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Agents', path: '/agents' },
+    { name: agent.name, path: `/agents/${agent.slug}` },
+  ]);
 
   return (
     <>
+      <JsonLd data={[agentSchema, breadcrumbSchema]} />
       {/* Breadcrumb */}
       <div className="border-b bg-muted/30">
         <div className="container mx-auto px-4 py-3">

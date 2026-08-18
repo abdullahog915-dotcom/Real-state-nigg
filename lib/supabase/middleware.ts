@@ -60,7 +60,47 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Layouts and pages can render in parallel in the App Router. Enforce the
+  // admin boundary here so an unauthorized request never starts rendering an
+  // admin child page (and therefore cannot receive admin data in an RSC stream).
+  const isAdminPath = request.nextUrl.pathname === '/admin'
+    || request.nextUrl.pathname.startsWith('/admin/');
+  if (isAdminPath) {
+    const copyRefreshedCookies = (target: NextResponse) => {
+      for (const cookie of response.cookies.getAll()) {
+        target.cookies.set(cookie);
+      }
+      return target;
+    };
+
+    if (!user) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/login';
+      loginUrl.search = '';
+      loginUrl.searchParams.set(
+        'next',
+        `${request.nextUrl.pathname}${request.nextUrl.search}`
+      );
+      return copyRefreshedCookies(NextResponse.redirect(loginUrl));
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (profile?.role !== 'admin') {
+      const deniedUrl = request.nextUrl.clone();
+      deniedUrl.pathname = '/access-denied';
+      deniedUrl.search = '';
+      return copyRefreshedCookies(NextResponse.redirect(deniedUrl));
+    }
+  }
 
   return response;
 }

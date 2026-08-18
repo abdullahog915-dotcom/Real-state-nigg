@@ -1,5 +1,5 @@
 export const SITE_CONFIG = {
-  name: 'Real Estate Agency',
+  name: process.env.NEXT_PUBLIC_SITE_NAME || 'Real Estate Agency',
   description: 'Premium real estate platform for Nigerian properties',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
 } as const;

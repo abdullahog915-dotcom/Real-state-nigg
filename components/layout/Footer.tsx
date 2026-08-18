@@ -10,7 +10,7 @@ export function Footer() {
       { name: 'Buy Property', href: '/properties/buy' },
       { name: 'Rent Property', href: '/properties/rent' },
       { name: 'Short Let', href: '/properties/short-let' },
-      { name: 'Featured Properties', href: '/properties?featured=true' },
+      { name: 'All Properties', href: '/properties' },
     ],
     company: [
       { name: 'About Us', href: '/about' },

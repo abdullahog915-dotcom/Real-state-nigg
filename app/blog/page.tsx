@@ -6,21 +6,42 @@ import { Pagination } from '@/components/shared/Pagination';
 import { Separator } from '@/components/ui/separator';
 import { getBlogPosts, getBlogCategories } from '@/lib/supabase/queries';
 import { cn } from '@/lib/utils';
-
-export const metadata: Metadata = {
-  title: 'Blog | Real Estate Insights & Guides',
-  description:
-    'Read the latest insights, market updates, and practical guides on buying, renting, and short-letting property in Nigeria — Lagos, Abuja, Port Harcourt, and beyond.',
-  alternates: {
-    canonical: '/blog',
-  },
-};
+import { buildPageMetadata } from '@/lib/seo';
 
 interface BlogPageProps {
   searchParams: Promise<{
     category?: string;
     page?: string;
   }>;
+}
+
+export async function generateMetadata({ searchParams }: BlogPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || '1', 10) || 1);
+  const categorySlug = params.category?.trim();
+  const categories = categorySlug ? await getBlogCategories() : [];
+  const category = categories.find((item) => item.slug === categorySlug);
+
+  if (categorySlug && !category) {
+    return buildPageMetadata({
+      title: 'Blog Category Not Found',
+      description: 'Browse Nigerian real estate insights, market updates, and property guides.',
+      path: '/blog',
+      noIndex: true,
+    });
+  }
+
+  const pathParams = new URLSearchParams();
+  if (category) pathParams.set('category', category.slug);
+  if (page > 1) pathParams.set('page', String(page));
+  const canonical = `/blog${pathParams.size ? `?${pathParams.toString()}` : ''}`;
+  const title = category
+    ? `${category.name} | Nigerian Real Estate Blog${page > 1 ? ` | Page ${page}` : ''}`
+    : `Real Estate Insights & Guides${page > 1 ? ` | Page ${page}` : ''}`;
+  const description = category?.description
+    || 'Read market updates and practical guides on buying, renting, and short-letting property across Nigeria.';
+
+  return buildPageMetadata({ title, description, path: canonical });
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {

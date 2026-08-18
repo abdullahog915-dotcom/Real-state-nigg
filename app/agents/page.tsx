@@ -4,18 +4,23 @@ import { AgentCard } from '@/components/agents/AgentCard';
 import { AgentSearch } from '@/components/agents/AgentSearch';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getAgents } from '@/lib/supabase/queries';
-
-export const metadata: Metadata = {
-  title: 'Our Agents | Meet Our Real Estate Team',
-  description:
-    'Meet our team of experienced real estate agents across Lagos, Abuja, and Port Harcourt. Find the right agent to help you buy, rent, or short-let property in Nigeria.',
-  alternates: {
-    canonical: '/agents',
-  },
-};
+import { buildPageMetadata } from '@/lib/seo';
 
 interface AgentsPageProps {
   searchParams: Promise<{ q?: string }>;
+}
+
+export async function generateMetadata({ searchParams }: AgentsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const hasSearch = Boolean(params.q?.trim());
+
+  return buildPageMetadata({
+    title: hasSearch ? 'Agent Search Results' : 'Our Agents | Meet Our Real Estate Team',
+    description:
+      'Meet experienced real estate agents across Lagos, Abuja, and Port Harcourt who can help you buy, rent, or short-let property in Nigeria.',
+    path: '/agents',
+    noIndex: hasSearch,
+  });
 }
 
 export default async function AgentsPage({ searchParams }: AgentsPageProps) {

@@ -1,4 +1,5 @@
-import { createClient } from './server';
+import { cache } from 'react';
+import { createClient, getUser } from './server';
 
 /**
  * Get featured properties for the homepage.
@@ -615,10 +616,7 @@ const PROPERTY_CARD_COLUMNS = `
  */
 export async function getFavoritePropertyIds(): Promise<string[]> {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (!user) return [];
 
@@ -734,7 +732,7 @@ const PROPERTY_DETAIL_COLUMNS = `
  * Get a single publicly visible property by slug with all detail relations.
  * Returns null when the slug does not match a published/featured property.
  */
-export async function getPropertyBySlug(slug: string) {
+export const getPropertyBySlug = cache(async function getPropertyBySlug(slug: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -771,7 +769,7 @@ export async function getPropertyBySlug(slug: string) {
   }
 
   return data;
-}
+});
 
 /**
  * Get properties related to the current one.
@@ -790,7 +788,7 @@ export async function getRelatedProperties(
   if (opts.location_id) {
     const { data, error } = await supabase
       .from('properties')
-      .select(PROPERTY_DETAIL_COLUMNS)
+      .select(PROPERTY_CARD_COLUMNS)
       .in('status', ['published', 'featured'])
       .eq('location_id', opts.location_id)
       .neq('id', excludeId)
@@ -812,7 +810,7 @@ export async function getRelatedProperties(
     const remaining = limit - results.length;
     const { data, error } = await supabase
       .from('properties')
-      .select(PROPERTY_DETAIL_COLUMNS)
+      .select(PROPERTY_CARD_COLUMNS)
       .in('status', ['published', 'featured'])
       .eq('transaction_type', opts.transaction_type)
       .neq('id', excludeId)
@@ -918,7 +916,7 @@ export async function getLocations() {
  * Get a single location by slug.
  * Returns null when the slug does not match any location.
  */
-export async function getLocationBySlug(slug: string) {
+export const getLocationBySlug = cache(async function getLocationBySlug(slug: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -947,7 +945,7 @@ export async function getLocationBySlug(slug: string) {
   }
 
   return data;
-}
+});
 
 /**
  * Get publicly visible properties in a location.
@@ -957,7 +955,7 @@ export async function getLocationProperties(locationId: string, limit = 12) {
 
   const { data, error } = await supabase
     .from('properties')
-    .select(PROPERTY_DETAIL_COLUMNS)
+    .select(PROPERTY_CARD_COLUMNS)
     .eq('location_id', locationId)
     .in('status', ['published', 'featured'])
     .order('published_at', { ascending: false })
@@ -1009,9 +1007,24 @@ export async function getPropertiesForComparison(slugs: string[]) {
 }
 
 /**
- * Columns selected for blog post cards and detail pages.
+ * Columns selected for blog post cards.
  */
-const BLOG_POST_COLUMNS = `
+const BLOG_CARD_COLUMNS = `
+  id,
+  title,
+  slug,
+  excerpt,
+  featured_image,
+  published_at,
+  blog_categories (
+    id,
+    name,
+    slug
+  )
+`;
+
+/** Full fields used by the public article page and its metadata. */
+const BLOG_POST_DETAIL_COLUMNS = `
   id,
   title,
   slug,
@@ -1022,6 +1035,8 @@ const BLOG_POST_COLUMNS = `
   meta_title,
   meta_description,
   published_at,
+  created_at,
+  updated_at,
   blog_categories (
     id,
     name,
@@ -1093,7 +1108,7 @@ export async function getBlogPosts(filters: BlogListFilters = {}) {
 
   let dataQuery = supabase
     .from('blog_posts')
-    .select(BLOG_POST_COLUMNS)
+    .select(BLOG_CARD_COLUMNS)
     .eq('status', 'published')
     .order('published_at', { ascending: false });
   if (categoryId) {
@@ -1113,7 +1128,7 @@ export async function getBlogPosts(filters: BlogListFilters = {}) {
 /**
  * Get all blog categories ordered for display.
  */
-export async function getBlogCategories() {
+export const getBlogCategories = cache(async function getBlogCategories() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -1128,18 +1143,18 @@ export async function getBlogCategories() {
   }
 
   return data ?? [];
-}
+});
 
 /**
  * Get a single published blog post by slug.
  * Returns null when the slug does not match a published post.
  */
-export async function getBlogPostBySlug(slug: string) {
+export const getBlogPostBySlug = cache(async function getBlogPostBySlug(slug: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('blog_posts')
-    .select(BLOG_POST_COLUMNS)
+    .select(BLOG_POST_DETAIL_COLUMNS)
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle();
@@ -1153,7 +1168,7 @@ export async function getBlogPostBySlug(slug: string) {
   }
 
   return data;
-}
+});
 
 /**
  * Get recent published blog posts, preferring the same category.
@@ -1171,7 +1186,7 @@ export async function getRelatedBlogPosts(
   if (categoryId) {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select(BLOG_POST_COLUMNS)
+      .select(BLOG_CARD_COLUMNS)
       .eq('status', 'published')
       .eq('category_id', categoryId)
       .neq('id', excludeId)
@@ -1190,7 +1205,7 @@ export async function getRelatedBlogPosts(
   if (results.length < limit) {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select(BLOG_POST_COLUMNS)
+      .select(BLOG_CARD_COLUMNS)
       .eq('status', 'published')
       .neq('id', excludeId)
       .order('published_at', { ascending: false })
@@ -1215,7 +1230,7 @@ export async function getRelatedBlogPosts(
  * Get a single active agent by slug.
  * Returns null when the slug does not match an active agent.
  */
-export async function getAgentBySlug(slug: string) {
+export const getAgentBySlug = cache(async function getAgentBySlug(slug: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -1247,7 +1262,7 @@ export async function getAgentBySlug(slug: string) {
   }
 
   return data;
-}
+});
 
 /**
  * Get publicly visible properties assigned to an agent.
@@ -1257,7 +1272,7 @@ export async function getAgentProperties(agentId: string, limit = 12) {
 
   const { data, error } = await supabase
     .from('properties')
-    .select(PROPERTY_DETAIL_COLUMNS)
+    .select(PROPERTY_CARD_COLUMNS)
     .eq('agent_id', agentId)
     .in('status', ['published', 'featured'])
     .order('published_at', { ascending: false })

@@ -2,15 +2,14 @@ import type { Metadata } from 'next';
 import { LocationCard } from '@/components/locations/LocationCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { getLocations } from '@/lib/supabase/queries';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Locations | Explore Properties Across Nigeria',
   description:
     'Explore Nigerian neighborhoods and cities — Lekki, Ikoyi, Victoria Island, Maitama, Asokoro, and more. Browse available properties for sale, rent, and short let in each location.',
-  alternates: {
-    canonical: '/locations',
-  },
-};
+  path: '/locations',
+});
 
 export default async function LocationsPage() {
   const locations = await getLocations();

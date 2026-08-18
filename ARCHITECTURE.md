@@ -2,7 +2,7 @@
 
 **Project:** Nigerian Real Estate Platform  
 **Version:** 1.0.0  
-**Last Updated:** 2026-08-13
+**Last Updated:** 2026-08-19
 
 ---
 
@@ -876,6 +876,12 @@ USING (
 - The Light tokens preserve the original green-and-white interface. Dark uses near-black layered surfaces, restrained gold primary/focus accents, warm off-white text, and neutral borders through the same semantic tokens.
 - Public and admin navigation expose the same keyboard-accessible two-option theme control. The root theme script applies the saved class before hydration to avoid a light-theme flash.
 
+### Admin Request Boundary (Phase 7 verification)
+
+- `/admin*` authorization is decided in middleware before App Router page rendering begins. Anonymous requests receive an HTTP redirect to login; authenticated non-admins are redirected to a dedicated noindex access-denied page.
+- The admin layout guard remains as defense in depth, every admin API route retains `adminApiGuard()`, and Supabase RLS remains authoritative for data access.
+- This request-boundary check is required because App Router layouts and child pages can render in parallel; a redirect initiated only by the layout can otherwise leave child data in the streamed RSC response.
+
 ### Image Optimization Strategy
 
 **Upload Flow:**
@@ -1199,100 +1205,34 @@ nigerian-real-estate-platform/
 
 #### 1. Metadata Management
 
-**Dynamic Metadata:**
-```tsx
-// Property detail page
-export async function generateMetadata({ params }): Promise<Metadata> {
-  const property = await getProperty(params.slug)
-  
-  return {
-    title: `${property.title} | Company Name`,
-    description: property.meta_description,
-    openGraph: {
-      title: property.title,
-      description: property.description,
-      images: [property.featured_image],
-      type: 'website',
-    },
-  }
-}
-```
+- `lib/seo.ts` is the canonical metadata builder for absolute canonicals, Open Graph, Twitter cards, article dates, social images, and robots directives.
+- The root layout defines `metadataBase` from `NEXT_PUBLIC_SITE_URL`. Production must set that variable to the final HTTPS origin.
+- Property, location, agent, and article pages use `generateMetadata()` with public Supabase data. Request-level React memoization prevents the metadata and page render from issuing the same detail lookup twice.
+- Listing filters use an explicit index policy: stable buy/rent/short-let routes and useful pagination/category states are self-canonical; transient search combinations are `noindex` and canonical to the nearest stable landing page.
+- Login, signup, favorites, comparison, access-denied, missing dynamic content, and invalid filter/category states are non-indexable.
 
 #### 2. Structured Data
 
-**Property Schema:**
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "Residence",
-  "name": "4 Bedroom Luxury Duplex",
-  "description": "...",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Lekki Phase 1",
-    "addressRegion": "Lagos",
-    "addressCountry": "NG"
-  },
-  "offers": {
-    "@type": "Offer",
-    "price": "85000000",
-    "priceCurrency": "NGN"
-  }
-}
-```
-
-**Real Estate Agent Schema:**
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "RealEstateAgent",
-  "name": "Agent Name",
-  "telephone": "+234...",
-  "address": {...}
-}
-```
+- `components/seo/JsonLd.tsx` safely escapes serialized JSON-LD before placing it in a script element.
+- The homepage emits the configured business as `RealEstateAgent`.
+- Property detail pages emit `RealEstateListing`, a nested appropriate `Residence`/`Apartment`/`Place`, the real offer, address, images, and available characteristics.
+- Active agent pages emit `RealEstateAgent`; published blog posts emit `Article`; all property, location, agent, and article detail pages emit `BreadcrumbList`.
+- Only stored/configured values are emitted. Ratings, reviews, opening hours, contact details, authors, and other facts are omitted when unavailable.
 
 #### 3. Sitemap Generation
 
-```typescript
-// app/sitemap.xml/route.ts
-export async function GET() {
-  const properties = await getPublishedProperties()
-  const agents = await getActiveAgents()
-  const posts = await getPublishedPosts()
-  
-  const urls = [
-    { url: '/', changefreq: 'daily', priority: 1.0 },
-    ...properties.map(p => ({
-      url: `/properties/${p.slug}`,
-      lastmod: p.updated_at,
-      changefreq: 'weekly',
-      priority: 0.8,
-    })),
-    // ... more URLs
-  ]
-  
-  return new Response(generateSitemapXML(urls), {
-    headers: { 'Content-Type': 'application/xml' },
-  })
-}
-```
+- `app/sitemap.ts` is a Next.js metadata route with a one-hour revalidation interval.
+- It uses a cookie-free anonymous Supabase client, so public RLS determines visibility and no authenticated identity can affect the generated document.
+- It includes stable public pages, published/featured properties, active agents, locations, and published articles. Each optional dataset is error-isolated so one failure or an empty table does not remove unrelated URLs.
 
 #### 4. Robots.txt
 
-```
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /api/
-Disallow: /auth/
-
-Sitemap: https://example.com/sitemap.xml
-```
+- `app/robots.ts` allows public crawling and disallows access-denied, admin, API, auth, and favorites paths.
+- The generated document references the configured host and sitemap. It does not block properties, agents, locations, blog, or static informational routes.
 
 #### 5. Canonical URLs
 
-Every page must have canonical URL to prevent duplicate content issues.
+Every indexable page has an absolute canonical URL. Invalid/private pages also receive a canonical for deterministic metadata, but their robots directive remains the indexing authority.
 
 #### 6. URL Structure
 
@@ -1522,28 +1462,12 @@ Cloudflare Pages uses Workers runtime, which has differences from Node.js:
 
 ### Caching Strategy
 
-**Cache:**
-- Static assets (CSS, JS, images)
-- Public property pages (with short TTL)
-- Blog posts
-
-**DO NOT Cache:**
-- Admin pages
-- User-specific data
-- API routes that mutate data
-- Authentication pages
-
-**Cache-Control Headers:**
-```typescript
-// For public property pages
-export const revalidate = 3600 // 1 hour
-
-// For frequently updated pages
-export const revalidate = 300 // 5 minutes
-
-// For admin pages
-export const dynamic = 'force-dynamic' // No caching
-```
+- Static build assets remain content-hashed and are suitable for long-lived browser/Cloudflare caching.
+- `app/sitemap.ts` is the only application-data response currently time-cached (`revalidate = 3600`). Its client is anonymous and cookie-free.
+- Public page renders remain dynamic because the shared navigation and property cards resolve the current session/favorite state from cookies. Caching those full responses publicly could expose or mix user state, so no page-level ISR was added.
+- React `cache()` provides request-level deduplication for detail metadata/page reads, blog categories, and server auth/profile checks. It does not retain property availability across requests.
+- Admin pages, authenticated/private routes, auth flows, favorites, and mutation APIs must never be placed in a public CDN cache.
+- Phase 9 must configure Cloudflare to cache immutable static assets and public media while bypassing `/admin*`, `/api*`, auth/session-sensitive responses, and any response carrying private cookies. Property data should remain fresh until an explicit invalidation design exists.
 
 ---
 
@@ -1585,7 +1509,8 @@ export const dynamic = 'force-dynamic' // No caching
 ### Core Web Vitals
 
 - **LCP (Largest Contentful Paint):** < 2.5s
-- **FID (First Input Delay):** < 100ms
+- **INP (Interaction to Next Paint):** < 200ms (current responsiveness metric)
+- **FID (First Input Delay):** < 100ms (legacy documented target; retained for historical comparison)
 - **CLS (Cumulative Layout Shift):** < 0.1
 
 ### Performance Optimizations
@@ -1614,6 +1539,12 @@ export const dynamic = 'force-dynamic' // No caching
    - Cloudflare CDN
    - Browser caching
    - Server-side caching where appropriate
+
+### Phase 7 measured baseline
+
+- Unthrottled local production measurements at 390px and 1440px on the homepage, property listing, and a live property detail recorded LCP between 1.10s and 1.45s and CLS of 0.
+- This is a repeatable development diagnostic, not production field data. INP requires real user interaction data (or a controlled interaction suite) after deployment; TTFB and LCP must be rechecked from the production region in Phase 9.
+- The current image path intentionally uses unoptimized Next Image URLs for Cloudflare compatibility. External Supabase media can dominate transfer cost; responsive Cloudflare/Supabase transformations should be enabled only once the production delivery service and URL contract are chosen.
 
 ---
 
@@ -1684,5 +1615,5 @@ This architecture provides a solid foundation for a premium, production-ready Ni
 ---
 
 **Document Version:** 1.0.0  
-**Last Updated:** 2026-08-13  
+**Last Updated:** 2026-08-19
 **Status:** Phase 1 Complete
