@@ -421,7 +421,7 @@ supabase db dump -f backup.sql
 
 ## 15. SECURITY BEST PRACTICES
 
-1. **Do not configure a service_role key for the application** — admin operations use the authenticated session plus RLS
+1. **Never expose elevated Supabase keys** — admin operations use authenticated sessions plus RLS; only the isolated server-only public-lead writer may use the dedicated `SUPABASE_SECRET_KEY`
 2. **Always use RLS policies** (never rely on client-side checks)
 3. **Validate all user inputs** (use Zod schemas)
 4. **Limit file upload sizes** in storage buckets

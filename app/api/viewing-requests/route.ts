@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { rateLimitPublicForm } from '@/lib/rate-limit';
+import { submitViewingRequest } from '@/lib/supabase/lead-writer';
 import { createClient } from '@/lib/supabase/server';
 import { verifyTurnstileToken } from '@/lib/turnstile';
 
@@ -30,8 +31,8 @@ const viewingRequestSchema = z.object({
 
 /**
  * POST /api/viewing-requests
- * Public viewing request submission. Inserts into the viewing_requests table
- * using the anon/server client — RLS allows public inserts and blocks reads.
+ * Public viewing request submission. Public property validation uses the RLS
+ * client; insertion uses the dedicated server-only trusted lead writer.
  */
 export async function POST(request: Request) {
   const rateLimited = await rateLimitPublicForm(request, '/api/viewing-requests');
@@ -87,19 +88,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Property not found' }, { status: 404 });
   }
 
-  const { error } = await supabase.from('viewing_requests').insert({
-    property_id: parsed.data.property_id,
+  const saved = await submitViewingRequest({
+    propertyId: parsed.data.property_id,
     name: parsed.data.name,
     email: parsed.data.email,
     phone: parsed.data.phone,
-    preferred_date: parsed.data.preferred_date,
-    preferred_time: parsed.data.preferred_time,
+    preferredDate: parsed.data.preferred_date,
+    preferredTime: parsed.data.preferred_time,
     message: parsed.data.message || null,
-    status: 'requested',
   });
 
-  if (error) {
-    console.error('Error submitting viewing request:', error.message);
+  if (!saved) {
     return NextResponse.json(
       { error: 'Unable to submit your viewing request right now. Please try again.' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { rateLimitPublicForm } from '@/lib/rate-limit';
+import { submitInquiry } from '@/lib/supabase/lead-writer';
 import { createClient } from '@/lib/supabase/server';
 import { verifyTurnstileToken } from '@/lib/turnstile';
 
@@ -24,8 +25,8 @@ const inquirySchema = z.object({
 
 /**
  * POST /api/inquiries
- * Public inquiry submission. Inserts into the inquiries table using the
- * anon/server client — RLS allows public inserts and blocks reads.
+ * Public inquiry submission. Public property validation uses the RLS client;
+ * insertion uses the dedicated server-only trusted lead writer.
  */
 export async function POST(request: Request) {
   const rateLimited = await rateLimitPublicForm(request, '/api/inquiries');
@@ -70,17 +71,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Property not found' }, { status: 404 });
   }
 
-  const { error } = await supabase.from('inquiries').insert({
-    property_id: parsed.data.property_id,
+  const saved = await submitInquiry({
+    propertyId: parsed.data.property_id,
     name: parsed.data.name,
     email: parsed.data.email,
     phone: parsed.data.phone || null,
     message: parsed.data.message,
-    source: 'website',
   });
 
-  if (error) {
-    console.error('Error submitting inquiry:', error.message);
+  if (!saved) {
     return NextResponse.json(
       { error: 'Unable to submit your inquiry right now. Please try again.' },
       { status: 500 }

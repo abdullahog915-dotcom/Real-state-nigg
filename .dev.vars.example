@@ -1,3 +1,5 @@
 # Used only by the local Workers-runtime preview.
 # Application values continue to come from an ignored Next.js .env.local file.
 NEXTJS_ENV=development
+# Add the real value only in ignored local files or Cloudflare Worker Secrets.
+SUPABASE_SECRET_KEY=

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { rateLimitPublicForm } from '@/lib/rate-limit';
-import { createClient } from '@/lib/supabase/server';
+import { submitContactSubmission } from '@/lib/supabase/lead-writer';
 import { verifyTurnstileToken } from '@/lib/turnstile';
 
 /**
@@ -24,8 +24,8 @@ const contactSchema = z.object({
 /**
  * POST /api/contact
  * Public contact form submission. Inserts into the contact_submissions
- * table using the anon/server client — RLS allows public inserts and
- * blocks reads (admins only).
+ * table using the dedicated server-only trusted lead writer. Browser Supabase
+ * roles cannot insert into this table after migration 020.
  */
 export async function POST(request: Request) {
   const rateLimited = await rateLimitPublicForm(request, '/api/contact');
@@ -51,17 +51,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from('contact_submissions').insert({
+  const saved = await submitContactSubmission({
     name: parsed.data.name,
     email: parsed.data.email,
     phone: parsed.data.phone || null,
     message: parsed.data.message,
   });
 
-  if (error) {
-    console.error('Error submitting contact form:', error.message);
+  if (!saved) {
     return NextResponse.json(
       { error: 'Unable to send your message right now. Please try again.' },
       { status: 500 }

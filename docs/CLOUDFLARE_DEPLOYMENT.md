@@ -10,7 +10,7 @@ This runbook prepares Phase 9 without deploying, changing DNS, enabling HSTS, or
 - OpenNext creates `.open-next/worker.js` and `.open-next/assets`.
 - Wrangler reads `wrangler.jsonc`; `nodejs_compat` and `global_fetch_strictly_public` are enabled.
 - Immutable Next.js assets receive a one-year cache header through `public/_headers`.
-- Supabase remains the managed PostgreSQL, Auth, and Storage provider. The browser and server use only the public anon key plus the user's session; no service-role key is required.
+- Supabase remains the managed PostgreSQL, Auth, and Storage provider. Browser/session operations use the public anon key plus the user's session. Only the three public lead API routes use a separate server-only Supabase secret client for trusted inserts after rate limiting, validation, and Turnstile.
 - `middleware.ts` intentionally remains. Next.js 16 `proxy.ts` always uses the Node runtime, but OpenNext 1.20.2 does not support Node middleware. The deprecated Edge middleware still builds and preserves the request-boundary admin, favorites, Origin/CSRF, cookie-refresh, and body-size controls. Revisit only after OpenNext adds Node middleware support.
 - R2 incremental caching is not configured. Provisioning a bucket is an owner-approved infrastructure change and is unnecessary for the current dynamic, session-aware pages.
 
@@ -38,8 +38,9 @@ Server-only values:
 
 - `TURNSTILE_SECRET_KEY`
 - `TURNSTILE_ALLOWED_HOSTNAMES` - comma-separated hostnames, without schemes or paths; include the custom domain and only intentional preview hostname(s)
+- `SUPABASE_SECRET_KEY` - a dedicated modern Supabase `sb_secret_...` key stored only as a Cloudflare Worker Secret; used exclusively by contact/inquiry/viewing insertion code
 
-Never configure `SUPABASE_SERVICE_ROLE_KEY`. Remove it from ignored local/deployment settings if present; rotate it in Supabase if it was ever disclosed. Do not store secrets in `wrangler.jsonc`, Git, build logs, or `NEXT_PUBLIC_*` variables.
+The Supabase secret maps to elevated `service_role` database access and bypasses RLS. Never expose it to browser code, prefix it with `NEXT_PUBLIC_`, return it from an API, or write it to logs. Prefer a dedicated modern secret key over the legacy JWT `SUPABASE_SERVICE_ROLE_KEY`, and rotate it independently if exposure is suspected. Do not store secret values in `wrangler.jsonc`, Git, build logs, or tracked environment files.
 
 For local testing, use Cloudflare's published always-pass test site key `1x00000000000000000000AA` and test secret `1x0000000000000000000000000000000AA` in ignored `.env.local`. When no Turnstile site key/secret is configured, local development remains usable. A production Worker with no secret fails public-form verification closed.
 
@@ -77,7 +78,8 @@ Turnstile widgets are present on signup, login, contact, inquiry, and viewing fo
 - The server requires the expected action and an allowed hostname, uses the Cloudflare client IP when available, enforces the documented token length, uses a five-second timeout, and returns only generic public errors.
 - Tokens are reset after failed submissions because tokens are single-use and expire.
 - Login/signup pass `captchaToken` to Supabase Auth; Supabase must have CAPTCHA enabled for these tokens to be enforced.
-- The public Supabase anon key is intentionally public. A caller can attempt direct REST inserts without visiting application routes. Migration 019 still limits those inserts to published properties, safe initial statuses, and allowlisted data, but Cloudflare Turnstile/WAF cannot rate-limit the Supabase hostname. Fully eliminating that bypass would require a separately approved lead-ingestion architecture (for example, revoking direct anon insert policies and using a trusted server path). Do not weaken RLS or add a service-role browser path to solve it.
+- Once reviewed and manually applied, migration 020 closes direct anon/authenticated Data API inserts into contact submissions, inquiries, and viewing requests. Legitimate inserts go through the Worker routes and their isolated server-only writer. RLS remains enabled, browser `INSERT` privileges are revoked, and insert triggers preserve the property/state/field checks from migration 019.
+- Roll out without an ingestion gap: configure `SUPABASE_SECRET_KEY`, deploy the trusted-writer Worker, verify all three forms, and only then apply migration 020. The migration is never applied by the application build or deploy scripts.
 
 ## 6. Distributed rate limiting
 
@@ -137,7 +139,7 @@ Use WSL/Linux for final build parity because OpenNext warns that Windows support
 Owner-approved remote preview:
 
 1. Authenticate Wrangler with the intended account: `npx wrangler login`.
-2. Configure build/runtime public variables and runtime secrets in Cloudflare; create the Turnstile widget first.
+2. Configure build/runtime public variables and runtime secrets in Cloudflare; create the Turnstile widget first. Add `SUPABASE_SECRET_KEY` as an encrypted Worker Secret before deploying the trusted lead-writer code.
 3. Run `npm run upload` to upload a version without immediately routing production traffic, or use a dedicated preview Worker name/configuration.
 4. Test the full public/auth/private/admin/storage matrix on the preview URL. Do not use real production form volume.
 5. After explicit approval, run `npm run deploy`. This preserves dashboard variables through `--keep-vars`.
@@ -161,7 +163,7 @@ Verify on the actual canonical host:
 
 ## 11. Backup and rollback
 
-- Record the deployment Git commit (current preparation baseline: `5f2d5b1`) and confirm `supabase migration list --linked` remains aligned through 019.
-- Keep the previous healthy Cloudflare Worker version/deployment. Roll back application traffic through Cloudflare's deployment/version rollback; do not reverse database migrations destructively.
+- Record the deployment Git commit and confirm `supabase migration list --linked` matches the intended reviewed state before and after manually applying migration 020.
+- Keep the previous healthy Cloudflare Worker version/deployment. After migration 020 is applied, do not roll back to an older Worker that inserts leads with the anon client because those writes will correctly fail. Roll back only to a version containing the trusted lead writer; do not reverse database migrations destructively.
 - Supabase recovery uses platform backups/PITR according to the project's plan. Migration 019 is additive hardening and remains applied during an application rollback unless a separately reviewed forward migration is required.
 - If Turnstile causes a production incident, first verify keys/hostnames and Supabase CAPTCHA settings. A temporary owner-approved rollback should restore the previous Worker version; never expose a secret or introduce service-role access as a shortcut.

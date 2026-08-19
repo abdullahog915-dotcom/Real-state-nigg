@@ -59,6 +59,12 @@
       }
     }
   ],
+  "secrets": {
+    "required": [
+      "TURNSTILE_SECRET_KEY",
+      "SUPABASE_SECRET_KEY"
+    ]
+  },
   "observability": {
     "enabled": true
   }
