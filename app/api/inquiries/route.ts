@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { rateLimitPublicForm } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { verifyTurnstileToken } from '@/lib/turnstile';
 
@@ -27,6 +28,9 @@ const inquirySchema = z.object({
  * anon/server client — RLS allows public inserts and blocks reads.
  */
 export async function POST(request: Request) {
+  const rateLimited = await rateLimitPublicForm(request, '/api/inquiries');
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await request.json();

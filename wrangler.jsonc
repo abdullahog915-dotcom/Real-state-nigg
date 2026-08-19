@@ -17,6 +17,48 @@
       "service": "nigerian-real-estate-platform"
     }
   ],
+  "ratelimits": [
+    {
+      "name": "PUBLIC_FORM_RATE_LIMITER",
+      "namespace_id": "9001001",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    },
+    {
+      "name": "AUTH_CALLBACK_RATE_LIMITER",
+      "namespace_id": "9001002",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    },
+    {
+      "name": "FAVORITES_RATE_LIMITER",
+      "namespace_id": "9001003",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    },
+    {
+      "name": "ADMIN_PROPERTY_IMAGE_RATE_LIMITER",
+      "namespace_id": "9001004",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    },
+    {
+      "name": "ADMIN_MUTATION_RATE_LIMITER",
+      "namespace_id": "9001005",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ],
   "observability": {
     "enabled": true
   }

@@ -28,7 +28,7 @@ function uploadError(error: string, status = 400) {
 
 /** Uploads one admin-selected image batch through the authenticated RLS client. */
 export async function POST(request: Request) {
-  const denied = await adminApiGuard();
+  const denied = await adminApiGuard('property-images');
   if (denied) return denied;
 
   if (!getSupabaseProjectOrigin()) {
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
 
 /** Removes only strictly validated objects created by this uploader. */
 export async function DELETE(request: Request) {
-  const denied = await adminApiGuard();
+  const denied = await adminApiGuard('property-images');
   if (denied) return denied;
 
   const body = await request.json().catch(() => null);

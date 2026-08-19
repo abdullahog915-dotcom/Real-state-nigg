@@ -28,7 +28,7 @@ const createAgentSchema = z.object({
  * Admin-only agent creation.
  */
 export async function POST(request: Request) {
-  const denied = await adminApiGuard();
+  const denied = await adminApiGuard('mutation');
   if (denied) return denied;
 
   let body: unknown;

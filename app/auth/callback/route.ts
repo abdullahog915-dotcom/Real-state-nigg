@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { rateLimitAuthCallback } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { getSafeRedirectPath } from '@/lib/redirects';
 
@@ -10,6 +11,9 @@ import { getSafeRedirectPath } from '@/lib/redirects';
  * the standard SSR client — no service_role, no token handling of our own.
  */
 export async function GET(request: NextRequest) {
+  const rateLimited = await rateLimitAuthCallback(request);
+  if (rateLimited) return rateLimited;
+
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const next = getSafeRedirectPath(requestUrl.searchParams.get('next'));

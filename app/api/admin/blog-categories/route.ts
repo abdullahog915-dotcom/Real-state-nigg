@@ -17,7 +17,7 @@ const createCategorySchema = z.object({
  * Admin-only blog category creation.
  */
 export async function POST(request: Request) {
-  const denied = await adminApiGuard();
+  const denied = await adminApiGuard('mutation');
   if (denied) return denied;
 
   let body: unknown;

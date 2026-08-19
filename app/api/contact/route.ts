@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { rateLimitPublicForm } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { verifyTurnstileToken } from '@/lib/turnstile';
 
@@ -27,6 +28,9 @@ const contactSchema = z.object({
  * blocks reads (admins only).
  */
 export async function POST(request: Request) {
+  const rateLimited = await rateLimitPublicForm(request, '/api/contact');
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await request.json();

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { rateLimitFavorites } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -51,6 +52,19 @@ export async function GET() {
  * already-favorited property is treated as success (UNIQUE constraint guard).
  */
 export async function POST(request: Request) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  const rateLimited = await rateLimitFavorites(user.id);
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -62,16 +76,6 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
     return NextResponse.json({ error: 'Validation failed', fieldErrors }, { status: 400 });
-  }
-
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
   // Only publicly visible properties can be favorited
@@ -120,6 +124,19 @@ export async function POST(request: Request) {
  * Idempotent — removing a property that is not favorited still succeeds.
  */
 export async function DELETE(request: Request) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  const rateLimited = await rateLimitFavorites(user.id);
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -131,16 +148,6 @@ export async function DELETE(request: Request) {
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
     return NextResponse.json({ error: 'Validation failed', fieldErrors }, { status: 400 });
-  }
-
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
   const { error } = await supabase

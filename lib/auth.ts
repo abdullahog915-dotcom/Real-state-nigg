@@ -6,7 +6,13 @@
  */
 
 import { NextResponse } from 'next/server';
+import {
+  rateLimitAdminMutations,
+  rateLimitAdminPropertyImages,
+} from '@/lib/rate-limit';
 import { getUser, isAdmin } from '@/lib/supabase/server';
+
+type AdminRateLimitGroup = 'mutation' | 'property-images';
 
 /**
  * Server-side guard for `/api/admin/*` route handlers.
@@ -17,7 +23,7 @@ import { getUser, isAdmin } from '@/lib/supabase/server';
  *
  * Admin identity always comes from the session — never from client input.
  */
-export async function adminApiGuard(): Promise<Response | null> {
+export async function adminApiGuard(rateLimitGroup: AdminRateLimitGroup): Promise<Response | null> {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -28,5 +34,7 @@ export async function adminApiGuard(): Promise<Response | null> {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
   }
 
-  return null;
+  return rateLimitGroup === 'property-images'
+    ? rateLimitAdminPropertyImages(user.id)
+    : rateLimitAdminMutations(user.id);
 }

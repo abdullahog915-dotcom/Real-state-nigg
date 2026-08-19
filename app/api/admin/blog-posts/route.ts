@@ -24,7 +24,7 @@ const createBlogPostSchema = z.object({
  * authenticated session — never from client input.
  */
 export async function POST(request: Request) {
-  const denied = await adminApiGuard();
+  const denied = await adminApiGuard('mutation');
   if (denied) return denied;
 
   let body: unknown;
