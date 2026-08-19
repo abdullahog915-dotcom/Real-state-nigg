@@ -86,8 +86,7 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 - **@hookform/resolvers** for integration
 
 ### Hosting & Deployment
-- **Cloudflare Pages** (PRIMARY - NOT Vercel)
-- **Cloudflare Workers** runtime
+- **Cloudflare Workers via OpenNext** (PRIMARY - NOT Vercel/Pages static output)
 - **Cloudflare CDN** for assets
 - **Cloudflare DNS & SSL/TLS**
 
@@ -541,25 +540,26 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 
 ### Cloudflare Compatibility
 - Next.js must work with Cloudflare Workers runtime
-- No Node.js-specific APIs (fs, crypto - use Web APIs)
+- Use only Node.js APIs supported by Cloudflare's `nodejs_compat` layer; prefer Web APIs
 - Images: `unoptimized: true` in next.config.ts
 - No Vercel-specific features
 - No Edge Runtime assumptions from Vercel
+- Retain Edge `middleware.ts` until OpenNext supports Next.js 16 Node `proxy.ts`
 
 ### Caching Strategy
 - Cache static assets (CSS, JS, images)
-- Cache public property pages (with TTL)
+- Do not publicly cache cookie/session-aware page HTML without an explicit vary/invalidation design
 - DO NOT cache admin pages
 - DO NOT cache authenticated responses
 - DO NOT cache API mutations
 
 ### Deployment Process
-1. Push to GitHub
-2. Cloudflare auto-deploys from GitHub
-3. Build command: `npm run build`
-4. Build output: `.next`
-5. Environment variables in Cloudflare dashboard
-6. Custom domain via Cloudflare DNS
+1. Run `npm run build:cloudflare` and `npx wrangler deploy --dry-run`
+2. Configure build-time public variables and runtime variables/secrets in Cloudflare
+3. Upload an owner-approved preview Worker version and complete the smoke matrix
+4. Deploy only after explicit approval; OpenNext output is `.open-next`, not `.next`
+5. Add the custom domain/DNS and edge rules only after preview acceptance
+6. Follow `docs/CLOUDFLARE_DEPLOYMENT.md`
 
 ---
 
@@ -613,8 +613,8 @@ Premium, reusable real estate platform designed for Nigerian real estate agencie
 
 ---
 
-**Last Updated:** 2026-08-15
+**Last Updated:** 2026-08-19
 
-**Current Phase:** Phase 6 — Admin Dashboard ✅ COMPLETE
+**Current Phase:** Phase 9 — Cloudflare Production Preparation
 
-**Status:** Admin dashboard built and verified, awaiting commit approval; migration 018 applied to the live database 2026-08-15; Phase 7 — SEO & Performance is next
+**Status:** Phases 1–8 complete; local OpenNext/Workers preparation complete; owner-approved remote preview, Cloudflare/Supabase settings, domain/TLS, distributed rules, production deployment, and production validation remain

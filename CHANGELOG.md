@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 9 — Cloudflare production preparation (2026-08-19)
+
+#### Deployment architecture
+- Corrected the target from obsolete Cloudflare Pages/`.next` guidance to a Cloudflare Worker built with `@opennextjs/cloudflare` 1.20.2 and Wrangler 4.124.0.
+- Added the reviewed Worker/OpenNext configuration, safe build/preview/upload/deploy scripts, immutable static-asset caching, local preview template, ignored generated state, and dashboard-variable preservation for future approved deployments.
+- Removed `output: 'standalone'`; OpenNext owns the deployment bundle. The Cloudflare-targeted build now succeeds and produces `.open-next/worker.js`.
+- Tested Next.js 16 `proxy.ts` and retained Edge `middleware.ts` because OpenNext currently rejects Node middleware. Existing admin/favorites/session, Origin/CSRF, and body-size behavior remains unchanged.
+
+#### Production security preparation
+- Integrated Cloudflare Turnstile into login, signup, contact, inquiry, and viewing forms. Contact/inquiry/viewing verify tokens server-side with action/hostname checks, timeout, single-use reset behavior, a production fail-closed configuration, and generic public errors; auth sends CAPTCHA tokens to Supabase.
+- Added safe Turnstile and identity variables to `.env.example`. Centralized visible identity values and removed the fake footer address and unconfigured `#` social destinations.
+- Added an owner runbook for environment separation, Supabase Auth URLs/CAPTCHA, exact Cloudflare edge rate-limit expressions, TLS/HSTS, canonical domains, images/caching, preview/production validation, and rollback.
+- Documented that direct anonymous Supabase REST insert policies remain constrained by migration 019 but are outside the application hostname's Turnstile/WAF boundary; no service-role bypass or unreviewed database migration was introduced.
+
+#### Verification and deferred actions
+- TypeScript, ESLint, native Next.js build, OpenNext Cloudflare build, Wrangler packaging dry-run, and `git diff --check` pass; `npm audit --omit=dev` reports zero vulnerabilities. The first adapter build intentionally exposed the unsupported Node-proxy path; the retained Edge middleware build completed successfully.
+- No Cloudflare login/upload/deployment, DNS/HSTS change, Supabase setting/database change, commit, or push was performed. Real widget keys, Supabase Auth CAPTCHA, WAF rules, preview, custom domain/TLS, production smoke tests, and production performance/log checks remain owner/remote work.
+
 ### Phase 8 — Security Review (2026-08-19)
 
 #### Findings and fixes

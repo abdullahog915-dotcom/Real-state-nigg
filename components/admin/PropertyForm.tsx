@@ -24,6 +24,7 @@ import {
   PROPERTY_IMAGE_MAX_BATCH_BYTES,
   PROPERTY_IMAGE_MAX_FILES,
   PROPERTY_IMAGE_MIME_TYPES,
+  parseHttpUrl,
 } from '@/lib/property-image-storage';
 import { getPropertyTypeLabel, getTransactionTypeLabel } from '@/lib/utils';
 
@@ -332,9 +333,7 @@ export function PropertyForm({
 
     const filledImages = values.images.filter((image) => image.url.trim() !== '');
     for (const image of filledImages) {
-      try {
-        new URL(image.url);
-      } catch {
+      if (!parseHttpUrl(image.url)) {
         clientErrors.images = ['Every gallery image needs a valid URL'];
         break;
       }

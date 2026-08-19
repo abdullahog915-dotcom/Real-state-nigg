@@ -11,6 +11,7 @@
  * - profile roles                              → migration 002
  */
 import { z } from 'zod';
+import { parseHttpUrl } from '@/lib/property-image-storage';
 
 /** Public-facing media links must use browser-safe network protocols. */
 export const httpUrlSchema = z
@@ -18,10 +19,7 @@ export const httpUrlSchema = z
   .trim()
   .url('Enter a valid URL')
   .max(2048)
-  .refine((value) => {
-    const protocol = new URL(value).protocol;
-    return protocol === 'http:' || protocol === 'https:';
-  }, 'Only HTTP or HTTPS URLs are allowed');
+  .refine((value) => parseHttpUrl(value) !== null, 'Only HTTP or HTTPS URLs are allowed');
 
 export const PROPERTY_TYPES = [
   'apartment',

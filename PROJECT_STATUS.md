@@ -10,15 +10,15 @@
 
 ## CURRENT PHASE
 
-**PHASE 8 — SECURITY REVIEW ✅ COMPLETE**
+**PHASE 9 — CLOUDFLARE PRODUCTION PREPARATION IN PROGRESS**
 
-Status: ✅ COMPLETE — Code/config hardening is complete, migration 019 is active, migrations 001–019 are aligned locally/remotely, and post-migration application verification passed
+Status: 🟡 LOCAL PREPARATION COMPLETE — Cloudflare Worker/OpenNext build and security integrations are prepared; owner configuration, remote preview, DNS/TLS, distributed rules, production deployment, and production validation remain
 
 ---
 
 ## CURRENT TASK
 
-Phase 8 audited authentication, admin authorization, every RLS policy, Storage, all API routes, object access, uploads, input/query safety, CSRF/CORS/redirects, rate limiting, secrets/history, headers, error leakage, and SEO exposure. Demonstrated issues were fixed in application code and migration 019. Migration 019 was applied successfully and its remote policies, functions, triggers, and bucket restrictions were verified directly. No deployment, commit, or push was performed.
+Phase 9 audited the deployment architecture and corrected the target from obsolete Cloudflare Pages guidance to a Cloudflare Worker built by OpenNext. Worker/Wrangler configuration, static-asset caching, centralized production identity variables, and Turnstile integration are prepared. The native Next.js and OpenNext Worker builds pass. No Cloudflare login, upload, deployment, DNS/HSTS change, production Auth change, database change, commit, or push was performed.
 
 ✅ **Migration `018_protect_profile_role.sql` has been applied to the live database** (2026-08-15 via `supabase db query --linked`; function + trigger verified to exist).
 ✅ **Migration `019_security_hardening.sql` has been applied to the live database** (2026-08-19; migrations 001–019 aligned and `db push --dry-run` reports the remote database is up to date).
@@ -79,6 +79,16 @@ Phase 8 audited authentication, admin authorization, every RLS policy, Storage, 
 ---
 
 ## RECENTLY COMPLETED
+
+### Phase 9 — Cloudflare Production Preparation 🟡 LOCAL WORK COMPLETE (2026-08-19)
+
+- Selected Cloudflare Workers via `@opennextjs/cloudflare` 1.20.2 and Wrangler 4.124.0; added `wrangler.jsonc`, `open-next.config.ts`, safe scripts, ignored build/local state, and immutable Next static-asset headers.
+- Removed the misleading standalone-output assumption. `npm run build:cloudflare` now produces `.open-next/worker.js` successfully for Next.js 16.3.
+- Tested the Next.js 16 `proxy.ts` migration and deliberately retained `middleware.ts`: OpenNext does not yet support the Node middleware forced by `proxy.ts`; the Edge middleware builds and preserves admin/favorites/session/Origin/body-size protections.
+- Added accessible Turnstile widgets to login, signup, contact, inquiry, and viewing. Application form tokens are verified server-side with action/hostname validation and generic failures; auth tokens are passed to Supabase Auth.
+- Centralized name, description, tagline, address, logo text, contact values, and optional social URLs. Fake address/social links are no longer rendered when values are blank.
+- Added `docs/CLOUDFLARE_DEPLOYMENT.md` covering variables/secrets, Supabase Auth, Turnstile, exact rate-limit rules, DNS/TLS/HSTS, caching/images, preview/production, validation, and rollback.
+- Remote deployment and preview are intentionally not performed. Turnstile enforcement, Supabase Auth CAPTCHA, WAF rate limits, domain/TLS, and HSTS are not active until the owner completes the documented Cloudflare/Supabase steps.
 
 ### Phase 8 — Security Review ✅ COMPLETE (2026-08-19)
 - ✅ Anonymous live checks: public published data allowed; drafts, profiles, favorites, inquiries, viewings, contacts, and draft blog rows hidden; anonymous writes returned no rows
@@ -187,12 +197,13 @@ Phase 8 audited authentication, admin authorization, every RLS policy, Storage, 
 - Remove the unused service-role credential from ignored local/deployment environments and rotate it if it has been shared
 
 ### Phase 9 — Cloudflare Production
-- Cloudflare deployment
-- Custom domain configuration
-- SSL/TLS setup
-- CDN configuration
-- Security settings
-- Production testing
+- ✅ OpenNext/Workers architecture and local Worker build
+- ✅ Turnstile application integration and owner setup plan
+- ✅ Exact distributed rate-limiting plan (not yet active)
+- ⬜ Owner production identity, canonical URL, and keys
+- ⬜ Owner-approved remote preview and full smoke matrix
+- ⬜ Custom domain, SSL/TLS, redirects, and edge rules
+- ⬜ Owner-approved production deployment and production performance/log validation
 
 ---
 
@@ -396,6 +407,9 @@ Phase 8 audited authentication, admin authorization, every RLS policy, Storage, 
 ## KNOWN ISSUES
 
 - `NEXT_PUBLIC_SITE_URL` and the final brand/contact values must be set for production so canonical, sitemap, robots, and structured-data URLs use the real domain and business identity.
+- Turnstile keys, allowed hostnames, Supabase Auth CAPTCHA, and Cloudflare WAF rate-limit rules are prepared but not active; missing production server configuration fails application public-form verification closed.
+- OpenNext 1.20.2 does not support Next.js 16 Node middleware. Keep the deprecated Edge `middleware.ts` until adapter support lands; converting to `proxy.ts` currently breaks the Cloudflare build.
+- Cloudflare preview/production, DNS/TLS, HSTS, remote smoke tests, and production performance/log measurements require owner approval and infrastructure access.
 - Supabase-hosted public images remain unoptimized by Next.js by design for the current Cloudflare target. Configure/verify Cloudflare image delivery and cache behavior during Phase 9 rather than introducing Vercel image infrastructure.
 - No customer profile or auth-linked agent currently exists for a non-destructive live-session matrix; customer ownership and assigned-agent behavior were verified from the active RLS policies/functions/triggers and should be smoke-tested when those identities are introduced.
 
@@ -429,11 +443,13 @@ Phase 8 audited authentication, admin authorization, every RLS policy, Storage, 
 
 ## NEXT ACTION
 
-**PHASE 8 COMPLETE — READY FOR OWNER REVIEW AND COMMIT**
+**PHASE 9 LOCAL PREPARATION COMPLETE — OWNER/REMOTE ACTIONS REQUIRED**
 
-1. Review the complete uncommitted Phase 8 diff and commit only after owner approval.
-2. Remove the unused service-role credential from ignored local/deployment environments; rotate it if it has ever been copied or shared. The app does not require it.
-3. Begin Phase 9 separately when authorized: Cloudflare deployment, distributed rate limiting/Turnstile, production domain values, TLS/HSTS, and production smoke testing.
-4. Do not deploy or start Phase 9 automatically.
+1. Review the uncommitted Phase 9 diff; do not commit until owner approval.
+2. Provide final identity/contact/social values, canonical hostname, and real Turnstile widget keys.
+3. Configure Cloudflare build/runtime variables and secrets, Supabase Auth URL/CAPTCHA settings, then authorize a remote preview upload.
+4. Run the preview smoke/auth/form/storage matrix, activate and test the documented distributed rate limits, and only then authorize production deployment/domain changes.
+5. Keep HSTS disabled until the canonical HTTPS host and required subdomains are stable.
+6. Remove the unused service-role credential from ignored local/deployment environments; rotate it if it has ever been copied or shared. The app does not require it.
 
 **Note:** The live database currently contains real data (including one published property with four property-image rows/objects, agents, locations, two inquiries, one published blog post, and one registered admin user); older empty-database notes are obsolete.

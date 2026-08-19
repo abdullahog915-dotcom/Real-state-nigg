@@ -11,6 +11,10 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase/client';
 import { getSafeRedirectPath } from '@/lib/redirects';
 import { SITE_CONFIG } from '@/lib/constants';
+import {
+  isTurnstileConfigured,
+  TurnstileWidget,
+} from '@/components/security/TurnstileWidget';
 
 const signupFormSchema = z
   .object({
@@ -37,6 +41,8 @@ export function SignupForm({ next }: SignupFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const safeNext = getSafeRedirectPath(next);
 
@@ -56,6 +62,11 @@ export function SignupForm({ next }: SignupFormProps) {
   async function onSubmit(values: SignupFormValues) {
     setServerError(null);
 
+    if (isTurnstileConfigured && !turnstileToken) {
+      setServerError('Please complete the security check and try again.');
+      return;
+    }
+
     try {
       const emailRedirectTo = `${SITE_CONFIG.url}/auth/callback${
         safeNext ? `?next=${encodeURIComponent(safeNext)}` : ''
@@ -64,11 +75,16 @@ export function SignupForm({ next }: SignupFormProps) {
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
-        options: { emailRedirectTo },
+        options: {
+          emailRedirectTo,
+          ...(turnstileToken ? { captchaToken: turnstileToken } : {}),
+        },
       });
 
       if (error) {
         setServerError('Unable to create your account right now. Please try again.');
+        setTurnstileToken(null);
+        setTurnstileResetKey((value) => value + 1);
         return;
       }
 
@@ -91,6 +107,8 @@ export function SignupForm({ next }: SignupFormProps) {
       setConfirmationSent(true);
     } catch {
       setServerError('Something went wrong. Please try again.');
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   }
 
@@ -163,6 +181,12 @@ export function SignupForm({ next }: SignupFormProps) {
         )}
       </div>
 
+      <TurnstileWidget
+        action="signup"
+        onTokenChange={setTurnstileToken}
+        resetKey={turnstileResetKey}
+      />
+
       {/* Server / authentication error */}
       {serverError && (
         <p role="alert" className="text-sm text-destructive">
@@ -170,7 +194,11 @@ export function SignupForm({ next }: SignupFormProps) {
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isSubmitting || (isTurnstileConfigured && !turnstileToken)}
+      >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {isSubmitting ? 'Creating account...' : 'Create Account'}
       </Button>

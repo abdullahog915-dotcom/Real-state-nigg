@@ -1,6 +1,8 @@
 import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
+// Intentionally retain the Edge middleware convention: Next.js 16 proxy.ts is
+// Node-runtime-only, which OpenNext for Cloudflare 1.20.2 does not yet support.
 export async function middleware(request: NextRequest) {
   return await updateSession(request);
 }

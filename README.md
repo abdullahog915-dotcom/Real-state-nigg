@@ -39,38 +39,13 @@ This is a commercial-grade real estate platform that can be sold to Nigerian rea
 - **Zod** - TypeScript-first schema validation
 
 ### Deployment
-- **Cloudflare Pages** - Global CDN and hosting
-- **Cloudflare Workers** - Serverless runtime
+- **Cloudflare Workers** - Full-stack serverless runtime
+- **OpenNext for Cloudflare** - Next.js Worker adapter
 - **Cloudflare DNS & SSL** - Domain and security management
 
 ## 📋 Project Status
 
-### ✅ Completed Phases
-
-- **Phase 1** - Architecture & Planning
-  - Complete database schema (15 tables)
-  - RLS security strategy
-  - Component architecture
-  - Deployment architecture
-
-- **Phase 2** - Foundation (Current)
-  - Next.js setup with App Router
-  - TypeScript configuration (strict mode)
-  - Tailwind CSS with design tokens
-  - Project folder structure
-  - Layout components (Navbar, Footer)
-  - Utility functions and constants
-  - Cloudflare compatibility
-
-### 🚧 Pending Phases
-
-- **Phase 3** - Supabase Backend
-- **Phase 4** - Public Website
-- **Phase 5** - Conversion Features
-- **Phase 6** - Admin Dashboard
-- **Phase 7** - SEO & Performance
-- **Phase 8** - Security Review
-- **Phase 9** - Cloudflare Production
+Phases 1–8 are complete. Phase 9 Cloudflare production preparation is in progress; the Worker adapter, Turnstile integration, and deployment runbook are prepared, but no preview/production deployment, DNS change, or HSTS change has been performed.
 
 ## 🚀 Getting Started
 
@@ -227,28 +202,16 @@ const whatsappUrl = generateWhatsAppUrl(WHATSAPP_NUMBER, message);
 
 ## 🚀 Deployment
 
-### Cloudflare Pages
+### Cloudflare Workers via OpenNext
 
-1. **Connect GitHub Repository**
-   - Login to Cloudflare Dashboard
-   - Navigate to Pages
-   - Connect your repository
+The application is not a static Pages build. Validate the production Worker bundle with:
 
-2. **Configure Build Settings**
-   - Build command: `npm run build`
-   - Build output: `.next`
-   - Environment variables: Add all from `.env.example`
+```bash
+npm run build:cloudflare
+npx wrangler deploy --dry-run
+```
 
-3. **Deploy**
-   - Automatic deployment on git push to main
-   - Preview deployments for branches
-
-4. **Custom Domain**
-   - Add custom domain in Cloudflare
-   - Update DNS records
-   - SSL automatically provisioned
-
-See [Cloudflare Next.js documentation](https://developers.cloudflare.com/pages/framework-guides/nextjs/) for details.
+Do not run the remote upload/deploy scripts until production variables, Turnstile, Supabase Auth redirects, the preview plan, and the owner-approved canonical hostname are configured. See [docs/CLOUDFLARE_DEPLOYMENT.md](./docs/CLOUDFLARE_DEPLOYMENT.md) for the complete build, preview, rate-limit, domain, validation, and rollback procedure.
 
 ## 📊 Performance Targets
 
@@ -259,7 +222,12 @@ See [Cloudflare Next.js documentation](https://developers.cloudflare.com/pages/f
 ## 📝 Scripts
 
 - `npm run dev` - Start development server
-- `npm run build` - Build for production
+- `npm run build` - Build with Next.js
+- `npm run build:cloudflare` - Build the OpenNext Cloudflare Worker bundle
+- `npm run preview` - Build and preview locally in the Workers runtime
+- `npm run upload` - Build and upload a Worker version (remote; approval required)
+- `npm run deploy` - Build and deploy the Worker (remote; approval required)
+- `npm run cf-typegen` - Generate Cloudflare binding types
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 
@@ -278,7 +246,7 @@ Proprietary - This is commercial software.
 - [CHANGELOG.md](./CHANGELOG.md) - Project history
 - [Supabase Documentation](https://supabase.com/docs)
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Cloudflare Pages](https://pages.cloudflare.com/)
+- [Cloudflare Workers Next.js guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/)
 
 ## 💡 Configuration
 
@@ -306,7 +274,7 @@ The platform is designed to be reused for multiple clients:
 
 ### Build Issues
 
-- Ensure Node.js version is 18+ or 20+
+- Ensure Node.js satisfies Next.js and Wrangler requirements (Node.js 22+ for the pinned Wrangler release)
 - Clear `.next` folder and `node_modules`, reinstall dependencies
 - Check environment variables are properly set
 
@@ -319,6 +287,7 @@ The platform is designed to be reused for multiple clients:
 ### Cloudflare Deployment Issues
 
 - Verify Next.js config is Cloudflare-compatible
+- Run the final adapter build from Linux/WSL; OpenNext warns that Windows support is incomplete
 - Check environment variables in Cloudflare dashboard
 - Review build logs for errors
 

@@ -1,0 +1,3 @@
+# Used only by the local Workers-runtime preview.
+# Application values continue to come from an ignored Next.js .env.local file.
+NEXTJS_ENV=development

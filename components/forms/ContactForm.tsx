@@ -8,6 +8,10 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  isTurnstileConfigured,
+  TurnstileWidget,
+} from '@/components/security/TurnstileWidget';
 
 /**
  * Client-side mirror of the server schema in app/api/contact/route.ts.
@@ -30,6 +34,8 @@ type ContactFormValues = z.infer<typeof contactFormSchema>;
 export function ContactForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const {
     register,
@@ -48,11 +54,16 @@ export function ContactForm() {
   async function onSubmit(values: ContactFormValues) {
     setServerError(null);
 
+    if (isTurnstileConfigured && !turnstileToken) {
+      setServerError('Please complete the security check and try again.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, turnstile_token: turnstileToken ?? undefined }),
       });
 
       const result = await response.json();
@@ -61,12 +72,16 @@ export function ContactForm() {
         setServerError(
           result.error || 'Unable to send your message right now. Please try again.'
         );
+        setTurnstileToken(null);
+        setTurnstileResetKey((value) => value + 1);
         return;
       }
 
       setSubmitted(true);
     } catch {
       setServerError('Something went wrong. Please try again.');
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   }
 
@@ -162,6 +177,12 @@ export function ContactForm() {
             )}
           </div>
 
+          <TurnstileWidget
+            action="contact"
+            onTokenChange={setTurnstileToken}
+            resetKey={turnstileResetKey}
+          />
+
           {/* Server error */}
           {serverError && (
             <p role="alert" className="text-sm text-destructive">
@@ -169,7 +190,11 @@ export function ContactForm() {
             </p>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting || (isTurnstileConfigured && !turnstileToken)}
+          >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'Sending...' : 'Send Message'}
           </Button>

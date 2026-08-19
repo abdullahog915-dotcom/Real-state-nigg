@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { verifyTurnstileToken } from '@/lib/turnstile';
 
 /**
  * Server-side validation schema for property inquiries.
@@ -17,6 +18,7 @@ const inquirySchema = z.object({
     .optional()
     .or(z.literal('')),
   message: z.string().trim().min(10, 'Message is too short').max(2000, 'Message is too long'),
+  turnstile_token: z.string().max(2048).optional(),
 });
 
 /**
@@ -36,6 +38,13 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
     return NextResponse.json({ error: 'Validation failed', fieldErrors }, { status: 400 });
+  }
+
+  if (!(await verifyTurnstileToken(request, parsed.data.turnstile_token, 'inquiry'))) {
+    return NextResponse.json(
+      { error: 'Please complete the security check and try again.' },
+      { status: 400 }
+    );
   }
 
   const supabase = await createClient();

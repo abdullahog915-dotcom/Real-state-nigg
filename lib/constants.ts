@@ -1,7 +1,14 @@
 export const SITE_CONFIG = {
   name: process.env.NEXT_PUBLIC_SITE_NAME || 'Real Estate Agency',
-  description: 'Premium real estate platform for Nigerian properties',
+  description:
+    process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
+    'Premium real estate platform for Nigerian properties',
+  tagline:
+    process.env.NEXT_PUBLIC_SITE_TAGLINE ||
+    'Find Your Dream Property in Nigeria',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  address: process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || '',
+  logoText: process.env.NEXT_PUBLIC_LOGO_TEXT || 'RE',
 } as const;
 
 export const PROPERTY_TYPES = [
@@ -108,4 +115,11 @@ export const CONTACT_INFO = {
   phone: process.env.NEXT_PUBLIC_PHONE_NUMBER || '+234-XXX-XXX-XXXX',
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '234XXXXXXXXXX',
   email: process.env.NEXT_PUBLIC_EMAIL || 'info@realestate.com',
+} as const;
+
+export const SOCIAL_URLS = {
+  facebook: process.env.NEXT_PUBLIC_FACEBOOK_URL || '',
+  instagram: process.env.NEXT_PUBLIC_INSTAGRAM_URL || '',
+  twitter: process.env.NEXT_PUBLIC_TWITTER_URL || '',
+  linkedin: process.env.NEXT_PUBLIC_LINKEDIN_URL || '',
 } as const;

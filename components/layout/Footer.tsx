@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Globe, Camera, MessageCircle, Briefcase, Mail, Phone, MapPin } from 'lucide-react';
-import { CONTACT_INFO } from '@/lib/constants';
+import { CONTACT_INFO, SITE_CONFIG, SOCIAL_URLS } from '@/lib/constants';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -31,11 +31,11 @@ export function Footer() {
   };
 
   const socialLinks = [
-    { name: 'Facebook', icon: Globe, href: '#' },
-    { name: 'Instagram', icon: Camera, href: '#' },
-    { name: 'Twitter', icon: MessageCircle, href: '#' },
-    { name: 'LinkedIn', icon: Briefcase, href: '#' },
-  ];
+    { name: 'Facebook', icon: Globe, href: SOCIAL_URLS.facebook },
+    { name: 'Instagram', icon: Camera, href: SOCIAL_URLS.instagram },
+    { name: 'Twitter', icon: MessageCircle, href: SOCIAL_URLS.twitter },
+    { name: 'LinkedIn', icon: Briefcase, href: SOCIAL_URLS.linkedin },
+  ].filter((social) => social.href);
 
   return (
     <footer className="bg-muted/40 border-t">
@@ -46,23 +46,22 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xl">
-                RE
+                {SITE_CONFIG.logoText}
               </div>
-              <span className="font-bold text-xl">Real Estate</span>
+              <span className="font-bold text-xl">{SITE_CONFIG.name}</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">
-              Your trusted partner in finding the perfect property in Nigeria.
-              We specialize in residential and commercial real estate across Lagos, Abuja, and beyond.
+              {SITE_CONFIG.description}
             </p>
 
             {/* Contact info */}
             <div className="space-y-2 text-sm">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                <span className="text-muted-foreground">
-                  123 Victoria Island, Lagos, Nigeria
-                </span>
-              </div>
+              {SITE_CONFIG.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{SITE_CONFIG.address}</span>
+                </div>
+              )}
               <a href={`tel:${CONTACT_INFO.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <span>{CONTACT_INFO.phone}</span>
@@ -129,7 +128,7 @@ export function Footer() {
         {/* Bottom footer */}
         <div className="border-t py-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground text-center md:text-left">
-            © {currentYear} Real Estate Platform. All rights reserved.
+            © {currentYear} {SITE_CONFIG.name}. All rights reserved.
           </p>
 
           {/* Social links */}
@@ -142,6 +141,8 @@ export function Footer() {
                   href={social.href}
                   className="text-muted-foreground hover:text-primary transition-colors"
                   aria-label={social.name}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   <Icon className="h-5 w-5" />
                 </a>

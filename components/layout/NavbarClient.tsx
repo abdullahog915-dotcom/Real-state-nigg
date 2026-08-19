@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Heart, Menu, X, Phone, Mail } from 'lucide-react';
 import { useState } from 'react';
-import { CONTACT_INFO } from '@/lib/constants';
+import { CONTACT_INFO, SITE_CONFIG } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { ThemeControl } from '@/components/theme/ThemeControl';
@@ -42,7 +42,7 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
             </a>
           </div>
           <div className="text-muted-foreground">
-            Find Your Dream Property in Nigeria
+            {SITE_CONFIG.tagline}
           </div>
         </div>
       </div>
@@ -53,10 +53,10 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xl">
-              RE
+              {SITE_CONFIG.logoText}
             </div>
             <span className="hidden font-bold text-xl sm:inline-block">
-              Real Estate
+              {SITE_CONFIG.name}
             </span>
           </Link>
 

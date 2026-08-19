@@ -18,6 +18,27 @@ const MANAGED_PATH_PATTERN = new RegExp(
   'i'
 );
 
+/** Parse an absolute HTTP(S) URL without ever throwing on untrusted input. */
+export function parseHttpUrl(value: string | null | undefined): URL | null {
+  if (!value || typeof value !== 'string') return null;
+
+  const candidate = value.trim();
+  if (!candidate) return null;
+
+  try {
+    if (typeof URL.canParse === 'function' && !URL.canParse(candidate)) return null;
+    const parsed = new URL(candidate);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Return the configured Supabase project origin, or null for missing/invalid configuration. */
+export function getSupabaseProjectOrigin(): string | null {
+  return parseHttpUrl(process.env.NEXT_PUBLIC_SUPABASE_URL)?.origin ?? null;
+}
+
 export function isManagedPropertyImagePath(path: string): boolean {
   return MANAGED_PATH_PATTERN.test(path);
 }
@@ -27,19 +48,35 @@ export function isManagedPropertyImagePath(path: string): boolean {
  * External/shared URLs deliberately return null and are never deleted.
  */
 export function getManagedPropertyImagePath(url: string): string | null {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) return null;
-
   try {
-    const parsed = new URL(url);
-    const expected = new URL(supabaseUrl);
-    if (parsed.origin !== expected.origin) return null;
+    const parsed = parseHttpUrl(url);
+    const expectedOrigin = getSupabaseProjectOrigin();
+    if (!parsed || !expectedOrigin || parsed.origin !== expectedOrigin) return null;
+    if (parsed.search || parsed.hash) return null;
 
     const prefix = `/storage/v1/object/public/${PROPERTY_IMAGE_BUCKET}/`;
     if (!parsed.pathname.startsWith(prefix)) return null;
 
     const path = decodeURIComponent(parsed.pathname.slice(prefix.length));
     return isManagedPropertyImagePath(path) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Build the canonical public URL only for a strictly managed object path. */
+export function getPropertyImagePublicUrl(path: string): string | null {
+  if (!isManagedPropertyImagePath(path)) return null;
+
+  const origin = getSupabaseProjectOrigin();
+  if (!origin) return null;
+
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  try {
+    return new URL(
+      `/storage/v1/object/public/${PROPERTY_IMAGE_BUCKET}/${encodedPath}`,
+      origin
+    ).toString();
   } catch {
     return null;
   }

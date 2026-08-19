@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { slugify } from '@/lib/utils';
 import {
   getManagedPropertyImagePath,
+  getPropertyImagePublicUrl,
   PROPERTY_IMAGE_BUCKET,
 } from '@/lib/property-image-storage';
 import {
@@ -62,11 +63,18 @@ async function removeUnreferencedManagedImages(
   if (uniquePaths.length === 0) return;
 
   const pathByUrl = new Map(
-    uniquePaths.map((path) => [
-      supabase.storage.from(PROPERTY_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl,
-      path,
-    ])
+    uniquePaths.flatMap((path) => {
+      const url = getPropertyImagePublicUrl(path);
+      return url ? [[url, path] as const] : [];
+    })
   );
+  if (pathByUrl.size !== uniquePaths.length) {
+    console.error('Property image cleanup URL generation failed.', {
+      stage: 'reference_url_generation',
+      source: 'NEXT_PUBLIC_SUPABASE_URL',
+    });
+    return;
+  }
   const urls = [...pathByUrl.keys()];
   const [{ data: galleryRows, error: galleryError }, { data: coverRows, error: coverError }] =
     await Promise.all([
@@ -126,6 +134,15 @@ export async function PATCH(
   const parsed = updatePropertySchema.safeParse(body);
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
+    const urlFields = (['featured_image', 'video_url', 'images'] as const).filter(
+      (field) => fieldErrors[field]?.length
+    );
+    if (urlFields.length > 0) {
+      console.warn('Admin property URL validation rejected input.', {
+        route: 'PATCH /api/admin/properties/[id]',
+        fields: urlFields,
+      });
+    }
     return NextResponse.json({ error: 'Validation failed', fieldErrors }, { status: 400 });
   }
 

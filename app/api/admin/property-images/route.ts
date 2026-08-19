@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { adminApiGuard } from '@/lib/auth';
 import {
   hasValidPropertyImageSignature,
+  getPropertyImagePublicUrl,
+  getSupabaseProjectOrigin,
   isManagedPropertyImagePath,
   PROPERTY_IMAGE_BUCKET,
   PROPERTY_IMAGE_MAX_BATCH_BYTES,
@@ -28,6 +30,13 @@ function uploadError(error: string, status = 400) {
 export async function POST(request: Request) {
   const denied = await adminApiGuard();
   if (denied) return denied;
+
+  if (!getSupabaseProjectOrigin()) {
+    console.error('Property image upload configuration is invalid.', {
+      source: 'NEXT_PUBLIC_SUPABASE_URL',
+    });
+    return uploadError('Unable to upload the selected images right now', 500);
+  }
 
   const formData = await request.formData().catch(() => null);
   if (!formData) return uploadError('Invalid multipart upload');
@@ -86,11 +95,25 @@ export async function POST(request: Request) {
 
   for (const item of validated) {
     const path = `${group}/${crypto.randomUUID()}.${propertyImageExtension(item.mimeType)}`;
-    const { error } = await supabase.storage.from(PROPERTY_IMAGE_BUCKET).upload(path, item.bytes, {
-      cacheControl: '31536000',
-      contentType: item.mimeType,
-      upsert: false,
-    });
+    let uploadResult;
+    try {
+      uploadResult = await supabase.storage.from(PROPERTY_IMAGE_BUCKET).upload(path, item.bytes, {
+        cacheControl: '31536000',
+        contentType: item.mimeType,
+        upsert: false,
+      });
+    } catch (error) {
+      if (uploadedPaths.length > 0) {
+        await supabase.storage.from(PROPERTY_IMAGE_BUCKET).remove(uploadedPaths);
+      }
+      console.error('Property image upload threw before receiving a Storage response.', {
+        stage: 'storage_upload',
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      });
+      return uploadError('Unable to upload the selected images right now', 500);
+    }
+
+    const { error } = uploadResult;
 
     if (error) {
       if (uploadedPaths.length > 0) {
@@ -104,8 +127,16 @@ export async function POST(request: Request) {
     }
 
     uploadedPaths.push(path);
-    const { data } = supabase.storage.from(PROPERTY_IMAGE_BUCKET).getPublicUrl(path);
-    images.push({ url: data.publicUrl, storage_path: path, original_name: item.file.name });
+    const publicUrl = getPropertyImagePublicUrl(path);
+    if (!publicUrl) {
+      await supabase.storage.from(PROPERTY_IMAGE_BUCKET).remove(uploadedPaths);
+      console.error('Property image public URL generation failed.', {
+        stage: 'public_url_generation',
+        source: 'NEXT_PUBLIC_SUPABASE_URL',
+      });
+      return uploadError('Unable to upload the selected images right now', 500);
+    }
+    images.push({ url: publicUrl, storage_path: path, original_name: item.file.name });
   }
 
   return NextResponse.json({ images }, { status: 201 });
@@ -143,13 +174,19 @@ export async function DELETE(request: Request) {
     }
   }
 
-  const urls = paths.map((path) =>
-    supabase.storage.from(PROPERTY_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl
-  );
+  const urls = paths.map(getPropertyImagePublicUrl);
+  if (urls.some((url) => url === null)) {
+    console.error('Property image cleanup URL generation failed.', {
+      stage: 'reference_url_generation',
+      source: 'NEXT_PUBLIC_SUPABASE_URL',
+    });
+    return uploadError('Unable to verify the image right now', 500);
+  }
+  const validatedUrls = urls.filter((url): url is string => url !== null);
   const [{ data: galleryReferences, error: galleryError }, { data: coverReferences, error: coverError }] =
     await Promise.all([
-      supabase.from('property_images').select('id').in('url', urls).limit(1),
-      supabase.from('properties').select('id').in('featured_image', urls).limit(1),
+      supabase.from('property_images').select('id').in('url', validatedUrls).limit(1),
+      supabase.from('properties').select('id').in('featured_image', validatedUrls).limit(1),
     ]);
 
   if (galleryError || coverError) {

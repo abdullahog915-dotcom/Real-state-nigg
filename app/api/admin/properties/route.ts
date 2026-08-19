@@ -98,6 +98,15 @@ export async function POST(request: Request) {
   const parsed = createPropertySchema.safeParse(body);
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
+    const urlFields = (['video_url', 'images'] as const).filter(
+      (field) => fieldErrors[field]?.length
+    );
+    if (urlFields.length > 0) {
+      console.warn('Admin property URL validation rejected input.', {
+        route: 'POST /api/admin/properties',
+        fields: urlFields,
+      });
+    }
     return NextResponse.json({ error: 'Validation failed', fieldErrors }, { status: 400 });
   }
 

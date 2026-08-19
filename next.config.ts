@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -27,14 +28,13 @@ const nextConfig: NextConfig = {
     unoptimized: true, // Cloudflare doesn't support Vercel Image Optimization
   },
 
-  // Ensure output compatible with Cloudflare Workers
-  output: 'standalone',
-
   // Experimental features
   experimental: {
     // Enable for better performance
     optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
   },
 };
+
+initOpenNextCloudflareForDev();
 
 export default nextConfig;

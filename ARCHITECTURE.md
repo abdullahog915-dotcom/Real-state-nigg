@@ -75,8 +75,8 @@ This is a premium, reusable real estate platform designed specifically for the N
 - Type-safe form handling
 
 ### Hosting & Infrastructure
-- **Cloudflare Pages** for application hosting
-- **Cloudflare Workers** runtime
+- **Cloudflare Workers** for full-stack application hosting
+- **OpenNext for Cloudflare** for the Next.js Worker bundle
 - **Cloudflare CDN** for global distribution
 - **Cloudflare DNS** for domain management
 - **Cloudflare SSL/TLS** for security
@@ -115,7 +115,7 @@ This is a premium, reusable real estate platform designed specifically for the N
 │  └──────────────────────────────────────────────────────┘  │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │         Cloudflare Workers / Pages                    │  │
+│  │         OpenNext Cloudflare Worker                    │  │
 │  │  - Next.js Application Runtime                       │  │
 │  │  - Server-Side Rendering                             │  │
 │  │  - API Routes                                        │  │
@@ -1260,111 +1260,22 @@ NOT:
 
 ## DEPLOYMENT ARCHITECTURE
 
-### Cloudflare Pages Deployment
+### Cloudflare Workers Deployment
 
-#### Prerequisites
-1. Cloudflare account
-2. GitHub account
-3. GitHub repository with code
-4. Supabase project
+The application uses `@opennextjs/cloudflare` and Wrangler. It is not a static Pages deployment and `.next` is not a deployable output directory.
 
-#### Build Configuration
-
-**Build Command:**
 ```bash
-npm run build
+npm run build:cloudflare
+npx wrangler deploy --dry-run
 ```
 
-**Build Output Directory:**
-```
-.next
-```
+OpenNext writes the deployable entry point to `.open-next/worker.js` and static assets to `.open-next/assets`. `wrangler.jsonc` enables `nodejs_compat`, external fetch support, the asset binding, and the Worker self-reference. The pinned Wrangler release requires Node.js 22 or newer.
 
-**Node Version:**
-```
-18.x or 20.x
-```
+Cloudflare Workers Builds must receive every `NEXT_PUBLIC_*` value at build time and all runtime variables/secrets at runtime. Dashboard values are preserved by the approved deploy/upload scripts' `--keep-vars` option. The service-role key is not used.
 
-#### Environment Variables (Cloudflare)
+`middleware.ts` remains on the Edge runtime. Next.js 16 `proxy.ts` is Node-only, and OpenNext 1.20.2 does not yet support Node middleware. This is a deliberate compatibility choice that preserves the full request-boundary security behavior.
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-NEXT_PUBLIC_SITE_URL=https://yourdomain.com
-NEXT_PUBLIC_WHATSAPP_NUMBER=234XXXXXXXXXX
-NEXT_PUBLIC_GOOGLE_MAPS_KEY=AIza...
-NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
-```
-
-#### Cloudflare Compatibility
-
-**Next.js Config for Cloudflare:**
-```javascript
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: {
-    // Cloudflare doesn't support Vercel Image Optimization
-    unoptimized: true, // or use Cloudflare Images
-  },
-  // Ensure compatibility with Cloudflare Workers runtime
-}
-
-module.exports = nextConfig
-```
-
-**Note:** Verify current Cloudflare Pages compatibility with Next.js App Router. As of 2024, Cloudflare supports Next.js via `@cloudflare/next-on-pages` adapter.
-
-#### Deployment Steps
-
-1. **Connect GitHub Repository**
-   - Login to Cloudflare Dashboard
-   - Navigate to Pages
-   - Create new project
-   - Connect GitHub repository
-
-2. **Configure Build**
-   - Framework preset: Next.js
-   - Build command: `npm run build`
-   - Build output: `.next`
-   - Environment variables: Add all required vars
-
-3. **Deploy**
-   - Cloudflare auto-deploys on git push
-   - Build logs available in dashboard
-
-4. **Custom Domain**
-   - Add custom domain in Cloudflare Pages
-   - Update DNS records
-   - SSL/TLS auto-provisioned
-
-5. **Configure Caching**
-   - Set cache rules for static assets
-   - Exclude admin routes from cache
-   - Exclude API routes from cache
-
-#### CI/CD Pipeline
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to Cloudflare Pages
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: npm run build
-      # Cloudflare Pages handles deployment via GitHub integration
-```
+The exact owner-controlled preview, custom-domain, Supabase Auth, Turnstile, rate-limit, cache, validation, and rollback procedure is maintained in `docs/CLOUDFLARE_DEPLOYMENT.md`. No automatic CI production workflow is committed because production deployment requires explicit approval and reviewed secrets/domain settings.
 
 ---
 
@@ -1438,7 +1349,7 @@ jobs:
 
 ### Cloudflare Workers Runtime
 
-Cloudflare Pages uses Workers runtime, which has differences from Node.js:
+The OpenNext bundle runs on Cloudflare Workers with the `nodejs_compat` compatibility flag. Web APIs are native and Cloudflare provides a supported subset of Node.js APIs; filesystem/process assumptions and long-running processes still require careful review.
 
 **Supported:**
 - Fetch API
@@ -1446,11 +1357,10 @@ Cloudflare Pages uses Workers runtime, which has differences from Node.js:
 - URL API
 - Most standard JavaScript
 
-**NOT Supported:**
-- Node.js `fs` module
-- Node.js `crypto` module (use Web Crypto)
-- Long-running processes
-- WebSockets (use Durable Objects)
+**Avoid:**
+- persistent local filesystem assumptions
+- long-running/background processes without Workers primitives
+- Vercel-specific runtime or image services
 
 ### Next.js Compatibility
 
@@ -1475,7 +1385,7 @@ Cloudflare Pages uses Workers runtime, which has differences from Node.js:
 - Public page renders remain dynamic because the shared navigation and property cards resolve the current session/favorite state from cookies. Caching those full responses publicly could expose or mix user state, so no page-level ISR was added.
 - React `cache()` provides request-level deduplication for detail metadata/page reads, blog categories, and server auth/profile checks. It does not retain property availability across requests.
 - Admin pages, authenticated/private routes, auth flows, favorites, and mutation APIs must never be placed in a public CDN cache.
-- Phase 9 must configure Cloudflare to cache immutable static assets and public media while bypassing `/admin*`, `/api*`, auth/session-sensitive responses, and any response carrying private cookies. Property data should remain fresh until an explicit invalidation design exists.
+- `public/_headers` gives immutable `/_next/static/*` assets a one-year cache lifetime. The owner must avoid Cache Everything and keep `/admin*`, `/api*`, auth/session-sensitive responses, and responses carrying private cookies out of public edge caches. Property data remains fresh until an explicit invalidation design exists.
 
 ---
 
