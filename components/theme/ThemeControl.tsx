@@ -38,6 +38,7 @@ export function ThemeControl({ className, compact = false }: { className?: strin
 
   return (
     <Select
+      name="theme"
       value={activeTheme}
       onValueChange={(value) => setTheme(value === 'dark' ? 'dark' : 'light')}
     >

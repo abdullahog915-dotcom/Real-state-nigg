@@ -7,12 +7,12 @@ import { getUser } from '@/lib/supabase/server';
 import { getFavoriteProperties } from '@/lib/supabase/queries';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'My Favorites',
   description: 'Properties you have saved to your favorites.',
   path: '/favorites',
   noIndex: true,
-});
+}); }
 
 /**
  * Favorites page — requires authentication.

@@ -134,7 +134,7 @@ test('auth callback is limited before exchanging a code for a session', () => {
 
 test('every admin mutation keeps authorization and uses the correct authenticated limiter group', () => {
   const files = adminRouteFiles(join(root, 'app', 'api', 'admin'));
-  assert.equal(files.length, 14);
+  assert.ok(files.length >= 14, 'the existing admin API surface remains present');
 
   for (const file of files) {
     const routeSource = readFileSync(file, 'utf8');

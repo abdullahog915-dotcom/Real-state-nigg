@@ -11,7 +11,7 @@
  * - profile roles                              → migration 002
  */
 import { z } from 'zod';
-import { parseHttpUrl } from '@/lib/property-image-storage';
+import { parseHttpUrl } from './property-image-storage.ts';
 
 /** Public-facing media links must use browser-safe network protocols. */
 export const httpUrlSchema = z

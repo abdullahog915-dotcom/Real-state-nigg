@@ -476,12 +476,13 @@ export function PropertyForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Property Type *</Label>
+            <Label htmlFor="property_type">Property Type *</Label>
             <Select
+              name="property_type"
               value={values.property_type}
               onValueChange={(value) => setField('property_type', value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="property_type" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -495,12 +496,13 @@ export function PropertyForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Transaction Type *</Label>
+            <Label htmlFor="transaction_type">Transaction Type *</Label>
             <Select
+              name="transaction_type"
               value={values.transaction_type}
               onValueChange={(value) => setField('transaction_type', value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="transaction_type" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -514,9 +516,9 @@ export function PropertyForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Status *</Label>
-            <Select value={values.status} onValueChange={(value) => setField('status', value)}>
-              <SelectTrigger className="w-full capitalize">
+            <Label htmlFor="status">Status *</Label>
+            <Select name="status" value={values.status} onValueChange={(value) => setField('status', value)}>
+              <SelectTrigger id="status" className="w-full capitalize">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -571,12 +573,13 @@ export function PropertyForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Location</Label>
+            <Label htmlFor="location_id">Location</Label>
             <Select
+              name="location_id"
               value={values.location_id || NONE}
               onValueChange={(value) => setField('location_id', value === NONE ? '' : value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="location_id" className="w-full">
                 <SelectValue placeholder="Select a location" />
               </SelectTrigger>
               <SelectContent>
@@ -592,12 +595,13 @@ export function PropertyForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Agent</Label>
+            <Label htmlFor="agent_id">Agent</Label>
             <Select
+              name="agent_id"
               value={values.agent_id || NONE}
               onValueChange={(value) => setField('agent_id', value === NONE ? '' : value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="agent_id" className="w-full">
                 <SelectValue placeholder="Select an agent" />
               </SelectTrigger>
               <SelectContent>
@@ -698,6 +702,8 @@ export function PropertyForm({
                     {items.map((amenity) => (
                       <label key={amenity.id} className="flex items-center gap-2 text-sm">
                         <input
+                          id={`amenity-${amenity.id}`}
+                          name="amenity_ids"
                           type="checkbox"
                           className="h-4 w-4 rounded border-input"
                           checked={values.amenity_ids.includes(amenity.id)}
@@ -751,10 +757,12 @@ export function PropertyForm({
               asChild
               className={isUploading || values.images.length >= PROPERTY_IMAGE_MAX_FILES ? 'pointer-events-none opacity-50' : ''}
             >
-              <label>
+              <label htmlFor="property-image-upload">
                 {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                 {isUploading ? `Uploading ${uploadProgress}%` : 'Upload Images'}
                 <input
+                  id="property-image-upload"
+                  name="property_images"
                   type="file"
                   className="sr-only"
                   accept={PROPERTY_IMAGE_MIME_TYPES.join(',')}
@@ -812,6 +820,8 @@ export function PropertyForm({
               </div>
               <div className="min-w-0 space-y-2">
                 <Input
+                  id={`property-image-${index}-url`}
+                  name={`property_images[${index}].url`}
                   value={image.url}
                   onChange={(event) => setImage(index, { url: event.target.value })}
                   placeholder="External image URL"
@@ -819,6 +829,8 @@ export function PropertyForm({
                   readOnly={Boolean(image.storage_path)}
                 />
                 <Input
+                  id={`property-image-${index}-alt`}
+                  name={`property_images[${index}].alt_text`}
                   value={image.alt_text}
                   onChange={(event) => setImage(index, { alt_text: event.target.value })}
                   placeholder="Describe the image for accessibility"

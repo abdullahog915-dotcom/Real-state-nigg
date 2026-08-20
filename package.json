@@ -15,6 +15,7 @@
     "test:property-images": "node --test tests/property-image-storage.test.mjs",
     "test:rate-limit": "node --test tests/rate-limit.test.mjs",
     "test:lead-security": "node --test tests/lead-ingestion-security.test.mjs",
+    "test:phase10": "node --test tests/phase10-validation.test.mjs",
     "start": "next start",
     "lint": "eslint"
   },

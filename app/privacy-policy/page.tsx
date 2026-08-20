@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'Privacy Policy',
   description: 'How this real estate platform collects, uses, and protects personal information.',
   path: '/privacy-policy',
-});
+}); }
 
 export default function PrivacyPolicyPage() {
   return (

@@ -1,9 +1,11 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import {
+  apiBodyLimitForPath,
+  contentLengthExceedsLimit,
+} from '@/lib/api-request-size';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const DEFAULT_API_BODY_LIMIT = 1024 * 1024;
-const PROPERTY_IMAGE_REQUEST_LIMIT = 52 * 1024 * 1024;
 
 /** Reject browser cross-site mutations before cookie-backed auth is evaluated. */
 function crossSiteMutationResponse(request: NextRequest): NextResponse | null {
@@ -11,12 +13,9 @@ function crossSiteMutationResponse(request: NextRequest): NextResponse | null {
     return null;
   }
 
-  const contentLength = Number(request.headers.get('content-length'));
-  const bodyLimit = request.nextUrl.pathname === '/api/admin/property-images'
-    ? PROPERTY_IMAGE_REQUEST_LIMIT
-    : DEFAULT_API_BODY_LIMIT;
-  if (Number.isFinite(contentLength) && contentLength > bodyLimit) {
-    return NextResponse.json({ error: 'Request body is too large' }, { status: 413 });
+  const bodyLimit = apiBodyLimitForPath(request.nextUrl.pathname);
+  if (contentLengthExceedsLimit(request.headers, bodyLimit)) {
+    return NextResponse.json({ error: 'Request body too large.' }, { status: 413 });
   }
 
   if (request.headers.get('sec-fetch-site') === 'cross-site') {

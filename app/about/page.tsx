@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'About Us',
   description:
     'Learn how our Nigerian real estate platform helps people explore properties, locations, and active property agents.',
   path: '/about',
-});
+}); }
 
 const features = [
   {

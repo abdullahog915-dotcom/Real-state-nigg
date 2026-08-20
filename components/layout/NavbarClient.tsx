@@ -1,19 +1,22 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element -- OpenNext serves the owner-managed remote logo unoptimized. */
+
 import Link from 'next/link';
 import { Heart, Menu, X, Phone, Mail } from 'lucide-react';
 import { useState } from 'react';
-import { CONTACT_INFO, SITE_CONFIG } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { ThemeControl } from '@/components/theme/ThemeControl';
+import type { ResolvedSiteSettings } from '@/lib/site-settings';
 
 interface NavbarClientProps {
   /** Email of the signed-in user, or null when signed out. */
   userEmail: string | null;
+  settings: ResolvedSiteSettings;
 }
 
-export function NavbarClient({ userEmail }: NavbarClientProps) {
+export function NavbarClient({ userEmail, settings }: NavbarClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
@@ -32,17 +35,17 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
       <div className="hidden lg:block border-b bg-muted/40">
         <div className="container mx-auto flex h-10 items-center justify-between text-sm">
           <div className="flex items-center gap-6">
-            <a href={`tel:${CONTACT_INFO.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors">
+            {settings.phone && <a href={`tel:${settings.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors">
               <Phone className="h-4 w-4" />
-              <span>{CONTACT_INFO.phone}</span>
-            </a>
-            <a href={`mailto:${CONTACT_INFO.email}`} className="flex items-center gap-2 hover:text-primary transition-colors">
+              <span>{settings.phone}</span>
+            </a>}
+            {settings.email && <a href={`mailto:${settings.email}`} className="flex items-center gap-2 hover:text-primary transition-colors">
               <Mail className="h-4 w-4" />
-              <span>{CONTACT_INFO.email}</span>
-            </a>
+              <span>{settings.email}</span>
+            </a>}
           </div>
           <div className="text-muted-foreground">
-            {SITE_CONFIG.tagline}
+            {settings.tagline}
           </div>
         </div>
       </div>
@@ -52,11 +55,9 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
         <nav className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xl">
-              {SITE_CONFIG.logoText}
-            </div>
+            {settings.logoUrl ? <img src={settings.logoUrl} alt={`${settings.name} logo`} width="128" height="40" className="h-10 w-auto max-w-32 object-contain" /> : <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xl">{settings.logoText}</div>}
             <span className="hidden font-bold text-xl sm:inline-block">
-              {SITE_CONFIG.name}
+              {settings.name}
             </span>
           </Link>
 
@@ -182,16 +183,16 @@ export function NavbarClient({ userEmail }: NavbarClientProps) {
                 )}
               </div>
 
-              <div className="pt-4 border-t space-y-2">
-                <a href={`tel:${CONTACT_INFO.phone}`} className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
+              {(settings.phone || settings.email) && <div className="pt-4 border-t space-y-2">
+                {settings.phone && <a href={`tel:${settings.phone}`} className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
                   <Phone className="h-4 w-4" />
-                  <span>{CONTACT_INFO.phone}</span>
-                </a>
-                <a href={`mailto:${CONTACT_INFO.email}`} className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
+                  <span>{settings.phone}</span>
+                </a>}
+                {settings.email && <a href={`mailto:${settings.email}`} className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
                   <Mail className="h-4 w-4" />
-                  <span>{CONTACT_INFO.email}</span>
-                </a>
-              </div>
+                  <span>{settings.email}</span>
+                </a>}
+              </div>}
             </div>
           </div>
         )}

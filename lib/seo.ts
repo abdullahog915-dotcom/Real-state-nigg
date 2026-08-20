@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_CONFIG } from '@/lib/constants';
+import { getSiteSettings } from '@/lib/site-settings';
 
 const LOCAL_SITE_URL = 'http://localhost:3000';
 
@@ -47,9 +48,10 @@ interface PageMetadataOptions {
   type?: 'website' | 'article';
   publishedTime?: string | null;
   modifiedTime?: string | null;
+  siteName?: string;
 }
 
-export function buildPageMetadata({
+export async function buildPageMetadata({
   title,
   description,
   path,
@@ -59,17 +61,20 @@ export function buildPageMetadata({
   type = 'website',
   publishedTime,
   modifiedTime,
-}: PageMetadataOptions): Metadata {
+  siteName,
+}: PageMetadataOptions): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const resolvedSiteName = siteName || settings.name;
   const canonical = absoluteUrl(path);
-  const socialImage = publicImageUrl(image);
-  const socialTitle = absoluteTitle ? title : `${title} | ${SITE_CONFIG.name}`;
+  const socialImage = publicImageUrl(image || settings.seoOgImage);
+  const socialTitle = absoluteTitle ? title : `${title} | ${resolvedSiteName}`;
   const images = socialImage ? [{ url: socialImage, alt: title }] : undefined;
 
   const openGraph: Metadata['openGraph'] = type === 'article'
     ? {
         type: 'article',
         locale: 'en_NG',
-        siteName: SITE_CONFIG.name,
+        siteName: resolvedSiteName,
         url: canonical,
         title: socialTitle,
         description,
@@ -80,7 +85,7 @@ export function buildPageMetadata({
     : {
         type: 'website',
         locale: 'en_NG',
-        siteName: SITE_CONFIG.name,
+        siteName: resolvedSiteName,
         url: canonical,
         title: socialTitle,
         description,
@@ -128,22 +133,26 @@ export function breadcrumbJsonLd(items: BreadcrumbItem[]) {
   };
 }
 
-export function organizationJsonLd() {
-  const configuredPhone = process.env.NEXT_PUBLIC_PHONE_NUMBER;
-  const configuredEmail = process.env.NEXT_PUBLIC_EMAIL;
-
+export function organizationJsonLd(settings: {
+  organizationName: string;
+  description: string;
+  phone: string;
+  email: string;
+  logoUrl: string;
+}) {
   return {
     '@context': 'https://schema.org',
     '@type': 'RealEstateAgent',
     '@id': `${absoluteUrl('/')}#organization`,
-    name: SITE_CONFIG.name,
+    name: settings.organizationName,
     url: absoluteUrl('/'),
-    description: SITE_CONFIG.description,
+    description: settings.description,
     areaServed: {
       '@type': 'Country',
       name: 'Nigeria',
     },
-    ...(configuredPhone ? { telephone: configuredPhone } : {}),
-    ...(configuredEmail ? { email: configuredEmail } : {}),
+    ...(settings.phone ? { telephone: settings.phone } : {}),
+    ...(settings.email ? { email: settings.email } : {}),
+    ...(publicImageUrl(settings.logoUrl) ? { logo: publicImageUrl(settings.logoUrl) } : {}),
   };
 }

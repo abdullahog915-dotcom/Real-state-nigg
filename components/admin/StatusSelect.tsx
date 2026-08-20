@@ -56,7 +56,7 @@ export function StatusSelect({ apiPath, value, options, ariaLabel, className }: 
   };
 
   return (
-    <Select value={status} onValueChange={handleChange} disabled={isPending}>
+    <Select name="status" value={status} onValueChange={handleChange} disabled={isPending}>
       <SelectTrigger
         size="sm"
         aria-label={ariaLabel ?? 'Update status'}

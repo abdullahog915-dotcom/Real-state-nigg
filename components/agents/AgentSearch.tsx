@@ -35,6 +35,8 @@ export function AgentSearch() {
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          id="agent-search-query"
+          name="q"
           type="search"
           value={value}
           onChange={(event) => setValue(event.target.value)}

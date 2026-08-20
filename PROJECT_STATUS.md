@@ -8,6 +8,14 @@
 
 ---
 
+## Phase 10 — Owner verification pending
+
+The production-polish implementation provides `/admin/settings`, `/admin/banners`, request-time owner branding, validated `site-assets` uploads, and a responsive accessible hero. Migration 021 is aligned with the linked production project and the Phase 10 owner features are live. See `docs/OWNER_HANDOFF.md` for owner operations and transfer steps.
+
+Phase 10.1 adds local-only migration `022_banner_video_support.sql` and MP4 banner support. Migration 021 is now aligned with the linked project; migration 022 remains unapplied pending owner review. No Phase 10.1 deployment or production-data mutation has occurred.
+
+---
+
 ## CURRENT PHASE
 
 **PHASE 9 — CLOUDFLARE PRODUCTION PREPARATION IN PROGRESS**

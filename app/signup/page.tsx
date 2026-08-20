@@ -7,13 +7,13 @@ import { getSafeRedirectPath } from '@/lib/redirects';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'Create Account',
   description:
     'Create a free account to save favorite properties and manage your viewing requests.',
   path: '/signup',
   noIndex: true,
-});
+}); }
 
 interface SignupPageProps {
   searchParams: Promise<{ next?: string }>;

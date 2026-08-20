@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Phase 10 — Production Polish, Branding, Banners & Handoff
+
+#### Phase 10.1 — MP4 banner support
+
+- Added non-destructive migration 022 with an image/video discriminator, nullable desktop/mobile MP4 URLs, an optional poster, conditional media constraints, and a 25 MB `site-assets` bucket ceiling that permits `video/mp4`.
+- Added admin MP4/poster uploads, previews, media-specific limits, cancellation cleanup, and reference-safe replacement/deletion.
+- Added muted inline public playback, video-end carousel advancement, single-video looping, mobile source selection, poster/error fallback, and reduced-motion suppression.
+- Extended Phase 10 tests for legacy image compatibility, unsafe media combinations, MP4 URL/path/structure validation, and reduced-motion decisions.
+
+- Added owner-managed branding, contact, social, homepage fallback, favicon, and SEO defaults under `/admin/settings`.
+- Centralized Navbar, Footer, Contact, homepage fallback, root metadata, and organization schema on request-time site settings with documented DB → environment → code precedence.
+- Added admin-only JPEG/PNG/WebP uploads to the existing `site-assets` bucket with 5 MB limits, binary validation, server-generated paths, and reference-safe cleanup.
+- Added migration 021 for ordered, RLS-protected homepage banners; it is prepared but not applied.
+- Added `/admin/banners` CRUD and an accessible, responsive public slider with a safe no-banner fallback.
+- Added focused Phase 10 validation/storage tests and expanded rate-limit regression coverage for the new guarded routes.
+- Added `docs/OWNER_HANDOFF.md` for content ownership, deployment, Supabase, custom-domain, sale transfer, and secret-rotation procedures.
+
 ### Phase 9 — Cloudflare production preparation (2026-08-19)
 
 #### Deployment architecture

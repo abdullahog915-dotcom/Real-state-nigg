@@ -552,6 +552,65 @@ export interface Database {
           created_at?: string;
         };
       };
+      homepage_banners: {
+        Row: {
+          id: string;
+          media_type: 'image' | 'video';
+          title: string;
+          subtitle: string;
+          desktop_image_url: string | null;
+          mobile_image_url: string | null;
+          desktop_video_url: string | null;
+          mobile_video_url: string | null;
+          poster_image_url: string | null;
+          image_alt: string;
+          cta_label: string | null;
+          cta_url: string | null;
+          overlay_strength: number;
+          is_active: boolean;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          media_type?: 'image' | 'video';
+          title: string;
+          subtitle: string;
+          desktop_image_url?: string | null;
+          mobile_image_url?: string | null;
+          desktop_video_url?: string | null;
+          mobile_video_url?: string | null;
+          poster_image_url?: string | null;
+          image_alt: string;
+          cta_label?: string | null;
+          cta_url?: string | null;
+          overlay_strength?: number;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          media_type?: 'image' | 'video';
+          title?: string;
+          subtitle?: string;
+          desktop_image_url?: string | null;
+          mobile_image_url?: string | null;
+          desktop_video_url?: string | null;
+          mobile_video_url?: string | null;
+          poster_image_url?: string | null;
+          image_alt?: string;
+          cta_label?: string | null;
+          cta_url?: string | null;
+          overlay_strength?: number;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       site_settings: {
         Row: {
           id: string;

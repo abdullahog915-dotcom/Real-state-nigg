@@ -215,6 +215,8 @@ export function ViewingRequestsTable({ rows }: { rows: AdminViewingRequestRow[] 
                   Internal notes
                 </p>
                 <Textarea
+                  id="viewing-request-internal-notes"
+                  name="internal_notes"
                   rows={3}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}

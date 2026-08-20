@@ -242,6 +242,7 @@ Proprietary - This is commercial software.
 ## 🔗 Important Links
 
 - [PROJECT_STATUS.md](./PROJECT_STATUS.md) - Current development status
+- [Owner Handoff Guide](./docs/OWNER_HANDOFF.md) - Branding, content, deployment, transfer, and domain operations
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Complete system architecture
 - [CHANGELOG.md](./CHANGELOG.md) - Project history
 - [Supabase Documentation](https://supabase.com/docs)

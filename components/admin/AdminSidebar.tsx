@@ -14,6 +14,8 @@ import {
   Menu,
   MessageSquare,
   Newspaper,
+  ImageIcon,
+  Settings,
   UserCog,
   Users,
   X,
@@ -33,6 +35,8 @@ const NAV_ITEMS = [
   { href: '/admin/contact-submissions', label: 'Contacts', icon: Mail },
   { href: '/admin/blog', label: 'Blog', icon: Newspaper },
   { href: '/admin/categories', label: 'Categories', icon: FolderOpen },
+  { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
+  { href: '/admin/settings', label: 'Site Settings', icon: Settings },
   { href: '/admin/users', label: 'Users', icon: UserCog },
 ] as const;
 

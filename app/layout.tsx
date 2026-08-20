@@ -4,22 +4,22 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { SITE_CONFIG } from "@/lib/constants";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { getSiteUrl } from "@/lib/seo";
+import { getSiteUrl, publicImageUrl } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const socialImage = publicImageUrl(settings.seoOgImage);
+  return {
   metadataBase: getSiteUrl(),
-  title: {
-    default: SITE_CONFIG.name,
-    template: `%s | ${SITE_CONFIG.name}`,
-  },
-  description: SITE_CONFIG.description,
+  title: { default: settings.name, template: `%s | ${settings.name}` },
+  description: settings.seoDescription,
   keywords: [
     "real estate Nigeria",
     "properties for sale Lagos",
@@ -29,9 +29,9 @@ export const metadata: Metadata = {
     "rent apartment Lagos",
     "luxury homes Nigeria",
   ],
-  authors: [{ name: SITE_CONFIG.name }],
-  creator: SITE_CONFIG.name,
-  publisher: SITE_CONFIG.name,
+  authors: [{ name: settings.organizationName }],
+  creator: settings.organizationName,
+  publisher: settings.organizationName,
   category: "real estate",
   formatDetection: {
     email: false,
@@ -41,15 +41,17 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_NG",
-    url: SITE_CONFIG.url,
-    siteName: SITE_CONFIG.name,
-    title: SITE_CONFIG.name,
-    description: SITE_CONFIG.description,
+    url: getSiteUrl().toString(),
+    siteName: settings.name,
+    title: settings.name,
+    description: settings.seoDescription,
+    ...(socialImage ? { images: [{ url: socialImage, alt: settings.name }] } : {}),
   },
   twitter: {
-    card: "summary",
-    title: SITE_CONFIG.name,
-    description: SITE_CONFIG.description,
+    card: socialImage ? "summary_large_image" : "summary",
+    title: settings.name,
+    description: settings.seoDescription,
+    ...(socialImage ? { images: [socialImage] } : {}),
   },
   robots: {
     index: true,
@@ -62,7 +64,9 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-};
+  ...(settings.faviconUrl ? { icons: { icon: settings.faviconUrl } } : {}),
+  };
+}
 
 export default async function RootLayout({
   children,

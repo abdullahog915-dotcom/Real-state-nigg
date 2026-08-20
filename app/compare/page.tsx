@@ -8,13 +8,13 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'Compare Properties | Side-by-Side Property Comparison',
   description:
     'Compare Nigerian properties side by side — price, bedrooms, bathrooms, area, amenities, and more. Select up to 3 properties from the listings to find your best match.',
   path: '/compare',
   noIndex: true,
-});
+}); }
 
 interface ComparePageProps {
   searchParams: Promise<{ ids?: string }>;

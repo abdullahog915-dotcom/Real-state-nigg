@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'Terms of Use',
   description: 'Terms that apply when using this Nigerian real estate platform and its property information.',
   path: '/terms',
-});
+}); }
 
 export default function TermsPage() {
   return (

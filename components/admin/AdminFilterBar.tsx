@@ -57,6 +57,8 @@ export function AdminFilterBar({
       >
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          id="admin-list-search"
+          name="q"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={searchPlaceholder}
@@ -67,10 +69,11 @@ export function AdminFilterBar({
 
       {statusOptions && (
         <Select
+          name="status"
           value={statusValue ?? ALL}
           onValueChange={(value) => push(search, value)}
         >
-          <SelectTrigger className="w-full sm:w-44 capitalize" aria-label="Filter by status">
+          <SelectTrigger id="admin-status-filter" className="w-full sm:w-44 capitalize" aria-label="Filter by status">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>

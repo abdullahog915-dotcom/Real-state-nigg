@@ -202,6 +202,8 @@ export function InquiriesTable({ rows }: { rows: AdminInquiryRow[] }) {
                   Internal notes
                 </p>
                 <Textarea
+                  id="inquiry-internal-notes"
+                  name="internal_notes"
                   rows={3}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}

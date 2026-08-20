@@ -6,6 +6,18 @@
 
 ---
 
+## PHASE 10 OWNER-MANAGED PRESENTATION
+
+Public identity is resolved server-side from `site_settings` and `social_links` per request. Precedence is an explicit database value, then the matching environment fallback, then a safe code fallback. Migration 015's exact sample seed values are treated as bootstrap placeholders. Optional database blanks intentionally suppress environment fallbacks.
+
+`homepage_banners` (migration 021) stores ordered responsive hero content. Anonymous and authenticated reads are restricted by RLS to active rows; admins manage all rows through guarded APIs. Media remains in `site-assets`. Every new settings/banner mutation uses `adminApiGuard('mutation')`, the Cloudflare admin limiter, schema validation, the signed-in admin Supabase client, and existing Storage RLS.
+
+Migration 022 extends banners with a defaulted `image | video` discriminator and nullable desktop/mobile MP4 plus poster URLs. Legacy rows remain images. The `site-assets` bucket permits 25 MB objects because Storage limits are bucket-wide; application validation retains 5 MB image/poster, 25 MB desktop-video, and 15 MB mobile-video limits. MP4 uploads require the extension, MIME, server-generated managed path, and bounded ISO-BMFF structure.
+
+The public hero receives server-produced banner/settings data. The first image is eager/high-priority, later slides are lazy, mobile art direction uses `<picture>`, and no active rows produces a text fallback. SEO and organization identity remain server-generated.
+
+---
+
 ## TABLE OF CONTENTS
 
 1. [Overview](#overview)

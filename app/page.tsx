@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -11,9 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { SearchBar } from '@/components/shared/SearchBar';
+import { HeroBanner } from '@/components/home/HeroBanner';
 import { SectionHeading } from '@/components/shared/SectionHeading';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PropertyCard } from '@/components/properties/PropertyCard';
@@ -31,70 +28,45 @@ import {
   PROPERTY_TYPES,
 } from '@/lib/constants';
 import { buildPageMetadata, organizationJsonLd } from '@/lib/seo';
+import { getActiveHomepageBanners } from '@/lib/banner-queries';
+import { getSiteSettings } from '@/lib/site-settings';
 
-export const metadata: Metadata = buildPageMetadata({
-  title: 'Find Your Dream Property in Nigeria',
-  description:
-    'Browse premium properties for sale, rent, and short let across Lagos, Abuja, and Port Harcourt. Find apartments, duplexes, villas, and commercial spaces with trusted local agents.',
-  path: '/',
-});
+export async function generateMetadata() {
+  const settings = await getSiteSettings();
+  return buildPageMetadata({
+    title: settings.name,
+    description: settings.seoDescription,
+    path: '/',
+    absoluteTitle: true,
+    image: settings.seoOgImage,
+    siteName: settings.name,
+  });
+}
 
 export default async function HomePage() {
   // Fetch all data in parallel
-  const [properties, locations, agents, totalProperties, favoriteIds] = await Promise.all([
+  const [properties, locations, agents, totalProperties, favoriteIds, banners, settings] = await Promise.all([
     getFeaturedProperties(6),
     getFeaturedLocations(),
     getActiveAgents(6),
     getTotalPropertyCount(),
     getFavoritePropertyIds(),
+    getActiveHomepageBanners(),
+    getSiteSettings(),
   ]);
 
   return (
     <>
-      <JsonLd data={organizationJsonLd()} />
+      <JsonLd data={organizationJsonLd(settings)} />
       {/* ── Hero Section ── */}
-      <section className="relative bg-gradient-to-br from-primary/5 via-background to-primary/10">
-        <div className="container mx-auto px-4 py-16 lg:py-24">
-          <div className="mx-auto max-w-4xl text-center">
-            <Badge variant="secondary" className="mb-4">
-              {totalProperties > 0
-                ? `${totalProperties}+ Properties Available`
-                : 'Premium Nigerian Real Estate'}
-            </Badge>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-              Find Your Perfect Property{' '}
-              <span className="text-primary">in Nigeria</span>
-            </h1>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Discover premium homes, apartments, and commercial properties across
-              Lagos, Abuja, and Port Harcourt. Your dream property is just a search away.
-            </p>
-          </div>
-
-          {/* Search bar */}
-          <div className="mx-auto mt-8 max-w-3xl">
-            <SearchBar variant="hero" />
-          </div>
-
-          {/* Quick stats */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <span>{totalProperties}+ Properties</span>
-            </div>
-            <Separator orientation="vertical" className="h-4" />
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <span>{agents.length}+ Expert Agents</span>
-            </div>
-            <Separator orientation="vertical" className="h-4 hidden sm:block" />
-            <div className="flex items-center gap-2 hidden sm:flex">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>{locations.length}+ Locations</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroBanner
+        banners={banners}
+        fallbackTitle={settings.heroTitle}
+        fallbackSubtitle={settings.heroSubtitle}
+        propertyCount={totalProperties}
+        agentCount={agents.length}
+        locationCount={locations.length}
+      />
 
       {/* ── Transaction Type Categories ── */}
       <section className="py-12 lg:py-16">
@@ -213,7 +185,7 @@ export default async function HomePage() {
                   href={`/locations/${location.slug}`}
                   className="group relative flex h-40 items-end overflow-hidden rounded-xl border bg-gradient-to-t from-black/60 to-transparent p-5 transition-all hover:shadow-md"
                 >
-                  {/* Background placeholder */}
+                  {/* Decorative fallback when a location has no image field. */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5" />
                   <div className="relative z-10">
                     <h3 className="text-lg font-semibold text-white">

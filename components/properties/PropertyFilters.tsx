@@ -111,6 +111,8 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
         <form onSubmit={handleKeywordSubmit} className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            id="property-filter-keyword"
+            name="q"
             type="text"
             placeholder="Search by keyword..."
             value={keyword}
@@ -121,10 +123,11 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
 
         {/* Transaction type */}
         <Select
+          name="type"
           value={currentType || '_all'}
           onValueChange={(v) => buildUrl({ type: v === '_all' ? '' : v })}
         >
-          <SelectTrigger>
+          <SelectTrigger id="property-filter-transaction-type" aria-label="Transaction type">
             <SelectValue placeholder="Buy / Rent / Short Let" />
           </SelectTrigger>
           <SelectContent>
@@ -139,10 +142,11 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
 
         {/* Property type */}
         <Select
+          name="property_type"
           value={currentPropertyType || '_all'}
           onValueChange={(v) => buildUrl({ property_type: v === '_all' ? '' : v })}
         >
-          <SelectTrigger>
+          <SelectTrigger id="property-filter-property-type" aria-label="Property type">
             <SelectValue placeholder="Property Type" />
           </SelectTrigger>
           <SelectContent>
@@ -157,10 +161,11 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
 
         {/* Location */}
         <Select
+          name="location"
           value={currentLocation || '_all'}
           onValueChange={(v) => buildUrl({ location: v === '_all' ? '' : v })}
         >
-          <SelectTrigger>
+          <SelectTrigger id="property-filter-location" aria-label="Location">
             <SelectValue placeholder="Location" />
           </SelectTrigger>
           <SelectContent>
@@ -216,10 +221,11 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
         <div className="grid grid-cols-1 gap-3 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Bedrooms */}
           <Select
+            name="bedrooms"
             value={currentBedrooms || '_any'}
             onValueChange={(v) => buildUrl({ bedrooms: v === '_any' ? '' : v })}
           >
-            <SelectTrigger>
+            <SelectTrigger id="property-filter-bedrooms" aria-label="Bedrooms">
               <SelectValue placeholder="Bedrooms" />
             </SelectTrigger>
             <SelectContent>
@@ -234,6 +240,8 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
 
           {/* Min Price */}
           <Input
+            id="property-filter-min-price"
+            name="min_price"
             type="number"
             placeholder="Min Price (₦)"
             value={currentMinPrice}
@@ -243,6 +251,8 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
 
           {/* Max Price */}
           <Input
+            id="property-filter-max-price"
+            name="max_price"
             type="number"
             placeholder="Max Price (₦)"
             value={currentMaxPrice}
@@ -252,10 +262,11 @@ export function PropertyFilters({ locations, defaultTransactionType = '' }: Prop
 
           {/* Sort */}
           <Select
+            name="sort"
             value={currentSort}
             onValueChange={(v) => buildUrl({ sort: v })}
           >
-            <SelectTrigger>
+            <SelectTrigger id="property-filter-sort" aria-label="Sort properties">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>

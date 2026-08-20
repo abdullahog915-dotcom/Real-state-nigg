@@ -170,7 +170,7 @@ export function BlogPostForm({ mode, postId, initialValues, categories }: BlogPo
 
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={values.status} onValueChange={(value) => setField('status', value)}>
+            <Select name="status" value={values.status} onValueChange={(value) => setField('status', value)}>
               <SelectTrigger id="status">
                 <SelectValue />
               </SelectTrigger>
@@ -189,7 +189,7 @@ export function BlogPostForm({ mode, postId, initialValues, categories }: BlogPo
 
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select value={values.category_id} onValueChange={(value) => setField('category_id', value)}>
+            <Select name="category_id" value={values.category_id} onValueChange={(value) => setField('category_id', value)}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>

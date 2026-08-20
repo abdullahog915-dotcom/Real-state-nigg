@@ -47,7 +47,7 @@ import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { SectionHeading } from '@/components/shared/SectionHeading';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getPropertyBySlug, getRelatedProperties, getFavoritePropertyIds } from '@/lib/supabase/queries';
-import { CONTACT_INFO } from '@/lib/constants';
+import { getSiteSettings } from '@/lib/site-settings';
 import {
   absoluteUrl,
   breadcrumbJsonLd,
@@ -163,17 +163,18 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
   // Related properties (naturally empty when no other properties exist)
   // fetched alongside the signed-in user's favorite ids
-  const [relatedProperties, favoriteIds] = await Promise.all([
+  const [relatedProperties, favoriteIds, settings] = await Promise.all([
     getRelatedProperties(
       property.id,
       { location_id: property.location_id, transaction_type: property.transaction_type },
       3
     ),
     getFavoritePropertyIds(),
+    getSiteSettings(),
   ]);
 
   // WhatsApp CTA — prefer the assigned agent's WhatsApp number
-  const whatsappNumber = agent?.whatsapp || agent?.phone || CONTACT_INFO.whatsapp;
+  const whatsappNumber = agent?.whatsapp || agent?.phone || settings.whatsapp;
   const whatsappUrl = generateWhatsAppUrl(
     whatsappNumber,
     `Hello, I'm interested in "${property.title}" (${getTransactionTypeLabel(property.transaction_type)}). Please share more details.`
@@ -415,11 +416,13 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 {property.address && <p>{property.address}</p>}
               </div>
 
-              {/* Map placeholder — no map integration yet */}
-              <div className="mt-4 flex aspect-[16/6] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/40 text-muted-foreground">
-                <MapPin className="h-8 w-8" />
-                <p className="text-sm font-medium">Map preview coming soon</p>
-                <p className="text-xs">{locationLabel}</p>
+              {/* Location summary; no third-party map dependency is required. */}
+              <div className="mt-4 flex items-center gap-3 rounded-lg border bg-muted/40 p-4 text-muted-foreground">
+                <MapPin className="h-6 w-6 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Property location</p>
+                  <p className="text-xs">{locationLabel}</p>
+                </div>
               </div>
             </section>
           </div>

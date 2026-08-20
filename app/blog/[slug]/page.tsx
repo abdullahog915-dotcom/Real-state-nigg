@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { BlogCard } from '@/components/blog/BlogCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { SectionHeading } from '@/components/shared/SectionHeading';
-import { SITE_CONFIG } from '@/lib/constants';
+import { getSiteSettings } from '@/lib/site-settings';
 import {
   absoluteUrl,
   breadcrumbJsonLd,
@@ -64,7 +64,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     ? post.blog_categories[0]
     : post.blog_categories;
 
-  const relatedPosts = await getRelatedBlogPosts(post.id, category?.id, 3);
+  const [relatedPosts, settings] = await Promise.all([
+    getRelatedBlogPosts(post.id, category?.id, 3),
+    getSiteSettings(),
+  ]);
   const description = toMetaDescription(post.meta_description || post.excerpt || post.content);
   const articleUrl = absoluteUrl(`/blog/${post.slug}`);
   const articleJsonLd = {
@@ -77,7 +80,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     mainEntityOfPage: articleUrl,
     publisher: {
       '@id': `${absoluteUrl('/')}#organization`,
-      name: SITE_CONFIG.name,
+      name: settings.organizationName,
     },
     ...(post.featured_image
       ? { image: [publicImageUrl(post.featured_image)].filter(Boolean) }

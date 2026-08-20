@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import { SITE_ASSET_API_BODY_LIMIT } from "./lib/api-request-size";
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -30,6 +31,9 @@ const nextConfig: NextConfig = {
 
   // Experimental features
   experimental: {
+    // Proxy/middleware must be able to forward the largest site-asset multipart envelope.
+    // Per-route middleware and upload validation still enforce the smaller API/file limits.
+    proxyClientMaxBodySize: SITE_ASSET_API_BODY_LIMIT,
     // Enable for better performance
     optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
   },

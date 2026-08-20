@@ -3,20 +3,21 @@ import { Mail, MessageCircle, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ContactForm } from '@/components/forms/ContactForm';
-import { CONTACT_INFO } from '@/lib/constants';
 import { generateWhatsAppUrl } from '@/lib/utils';
 import { buildPageMetadata } from '@/lib/seo';
+import { getSiteSettings } from '@/lib/site-settings';
 
-export const metadata: Metadata = buildPageMetadata({
+export async function generateMetadata(): Promise<Metadata> { return buildPageMetadata({
   title: 'Contact Us | Get in Touch',
   description:
     'Get in touch with our real estate team. Call, WhatsApp, email, or send us a message — we are happy to help with buying, renting, or short-letting property in Nigeria.',
   path: '/contact',
-});
+}); }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const settings = await getSiteSettings();
   const whatsappUrl = generateWhatsAppUrl(
-    CONTACT_INFO.whatsapp,
+    settings.whatsapp,
     'Hello, I would like to speak with your team about a property.'
   );
 
@@ -45,26 +46,26 @@ export default function ContactPage() {
                   <CardTitle className="text-lg">Reach Us Directly</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button asChild variant="outline" className="w-full justify-start" size="lg">
-                    <a href={`tel:${CONTACT_INFO.phone}`}>
+                  {settings.phone && <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                    <a href={`tel:${settings.phone}`}>
                       <Phone className="mr-2 h-4 w-4" />
-                      {CONTACT_INFO.phone}
+                      {settings.phone}
                     </a>
-                  </Button>
+                  </Button>}
 
-                  <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                  {settings.whatsapp && <Button asChild variant="outline" className="w-full justify-start" size="lg">
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Chat on WhatsApp
                     </a>
-                  </Button>
+                  </Button>}
 
-                  <Button asChild variant="outline" className="w-full justify-start" size="lg">
-                    <a href={`mailto:${CONTACT_INFO.email}`}>
+                  {settings.email && <Button asChild variant="outline" className="w-full justify-start" size="lg">
+                    <a href={`mailto:${settings.email}`}>
                       <Mail className="mr-2 h-4 w-4" />
-                      {CONTACT_INFO.email}
+                      {settings.email}
                     </a>
-                  </Button>
+                  </Button>}
                 </CardContent>
               </Card>
 

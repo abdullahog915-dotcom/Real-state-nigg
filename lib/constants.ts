@@ -1,5 +1,5 @@
 export const SITE_CONFIG = {
-  name: process.env.NEXT_PUBLIC_SITE_NAME || 'Real Estate Agency',
+  name: process.env.NEXT_PUBLIC_SITE_NAME || 'Nigerian Property Marketplace',
   description:
     process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
     'Premium real estate platform for Nigerian properties',
@@ -8,7 +8,7 @@ export const SITE_CONFIG = {
     'Find Your Dream Property in Nigeria',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   address: process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || '',
-  logoText: process.env.NEXT_PUBLIC_LOGO_TEXT || 'RE',
+  logoText: process.env.NEXT_PUBLIC_LOGO_TEXT || 'NP',
 } as const;
 
 export const PROPERTY_TYPES = [
@@ -112,9 +112,9 @@ export const ABUJA_LOCATIONS = [
 ] as const;
 
 export const CONTACT_INFO = {
-  phone: process.env.NEXT_PUBLIC_PHONE_NUMBER || '+234-XXX-XXX-XXXX',
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '234XXXXXXXXXX',
-  email: process.env.NEXT_PUBLIC_EMAIL || 'info@realestate.com',
+  phone: process.env.NEXT_PUBLIC_PHONE_NUMBER || '',
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '',
+  email: process.env.NEXT_PUBLIC_EMAIL || '',
 } as const;
 
 export const SOCIAL_URLS = {
